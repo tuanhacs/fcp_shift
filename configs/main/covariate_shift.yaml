@@ -8,7 +8,13 @@ datasets:
   # - {name: bank_marketing, source: openml, openml_id: 1461, task: classification, train_fraction: 0.4}
   # - {name: electricity, source: openml, openml_id: 151, task: classification, train_fraction: 0.4}
   # - {name: miniboone, source: openml, openml_id: 41150, task: classification, train_fraction: 0.4}
-  # - {name: fashion_mnist, source: openml, openml_id: 40996, task: classification, train_fraction: 0.4}
+  - {
+      name: fashion_mnist,
+      source: openml,
+      openml_id: 40996,
+      task: classification,
+      train_fraction: 0.4,
+    }
   - {
       name: year,
       source: openml,

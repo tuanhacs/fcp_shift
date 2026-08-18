@@ -8,3 +8,4 @@ dist/
 outputs/*
 !outputs/.gitkeep
 .history
+push.sh
