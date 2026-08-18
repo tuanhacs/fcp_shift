@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ ! -d outputs ]]; then
-  echo "No outputs directory exists. Run the experiments first." >&2
-  exit 1
-fi
-
-find outputs -type f -name '*.pdf' -print | sort
-
+python -m fcp_shift.cli figures --config configs/main/covariate_shift.yaml
+python -m fcp_shift.cli figures --config configs/main/transport_shift.yaml

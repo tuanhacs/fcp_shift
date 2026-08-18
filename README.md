@@ -94,6 +94,25 @@ Run all main experiments sequentially with:
 bash scripts/run_all_main.sh
 ```
 
+## Grouped weight figures
+
+After the covariate and transport jobs finish, combine all available weights into shared figures:
+
+```bash
+bash scripts/make_main_figures.sh
+```
+
+For each covariate-shift dataset, the command creates one two-panel forward figure for Goals 1–2, one two-panel inverse figure for Goals 3–4, and one two-panel selected-alpha figure. Exponential, quadratic, and Mahalanobis results are drawn together with consistent colors.
+
+For transport shift, the same three grouped figures are created separately for every `(dataset, rho)` pair. The aggregation reads `curves.npz` files from all completed seed directories, so it works after weights have been run as independent SLURM jobs.
+
+Grouped figures are written below:
+
+```text
+outputs/main_figures/covariate_shift/<dataset>/
+outputs/main_figures/transport_shift/<dataset>/rho_<value>/
+```
+
 ## Selecting a dataset, weight, shift, or seed
 
 The CLI can filter a multi-dataset YAML without editing it:
