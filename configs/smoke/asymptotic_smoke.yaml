@@ -1,0 +1,19 @@
+experiment: {kind: asymptotic, repetitions: 2, seeds: [7]}
+simulation:
+  dimension: 4
+  coefficients: [2.0, 1.0, 0.0, 0.0]
+  n_train: 500
+  source_pool_size: 3000
+  heteroscedastic_scale: 0.75
+  minimum_noise: 0.25
+model: {seed: 3, learning_rate: 0.1, max_iter: 20, max_leaf_nodes: 7, early_stopping: false}
+weights:
+  - {name: exponential, strength: 0.2, clip_quantile: 0.95}
+asymptotic:
+  alpha: 0.1
+  beta: 0.5
+  fixed_n: 100
+  fixed_m: 100
+  grid: [50, 100]
+fcp: {delta: 0.1, w_infinity: 1.0, optimize_delta: false, eta: 1.0e-10}
+output: {root: outputs/smoke}
