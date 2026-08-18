@@ -102,7 +102,7 @@ After the covariate and transport jobs finish, combine all available weights int
 bash scripts/make_main_figures.sh
 ```
 
-For each covariate-shift dataset, the command creates one two-panel forward figure for Goals 1–2, one two-panel inverse figure for Goals 3–4, and one two-panel selected-alpha figure. Exponential, quadratic, and Mahalanobis results are drawn together with consistent colors.
+For each covariate-shift dataset, the command creates a separate single-axis plot for each Goal. Every available weight—exponential, quadratic, and Mahalanobis—is drawn on the same axes with consistent colors. The plots do not use multi-panel subfigures.
 
 For transport shift, the same three grouped figures are created separately for every `(dataset, rho)` pair. The aggregation reads `curves.npz` files from all completed seed directories, so it works after weights have been run as independent SLURM jobs.
 

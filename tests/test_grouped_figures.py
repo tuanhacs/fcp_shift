@@ -22,4 +22,4 @@ def test_multiple_weights_are_written_to_shared_figures(tmp_path: Path):
     plot_grouped_weights(
         {"exponential": template, "quadratic": template}, tmp_path, "test"
     )
-    assert len(list(tmp_path.glob("grouped_weights_*.pdf"))) == 3
+    assert len(list(tmp_path.glob("grouped_weights_*.pdf"))) == 6

@@ -79,6 +79,12 @@ def plot_grouped_weights(
         return
     output_directory = Path(output_directory)
     output_directory.mkdir(parents=True, exist_ok=True)
+    for obsolete_name in (
+        "grouped_weights_forward_goals_1_2.pdf",
+        "grouped_weights_inverse_goals_3_4.pdf",
+        "grouped_weights_selected_alpha_goals_3_4.pdf",
+    ):
+        (output_directory / obsolete_name).unlink(missing_ok=True)
     first = next(iter(results.values()))
     alpha, beta = first["alpha"], first["beta"]
     for weight, arrays in results.items():
@@ -87,8 +93,8 @@ def plot_grouped_weights(
         ):
             raise ValueError(f"Incompatible grids for grouped weight {weight}")
 
-    figure, axes = plt.subplots(1, 2, figsize=(14, 5), sharex=True, sharey=True)
-    for goal, axis in [(1, axes[0]), (2, axes[1])]:
+    for goal in (1, 2):
+        figure, axis = plt.subplots(figsize=(8, 5))
         for index, (weight, arrays) in enumerate(results.items()):
             color = _color(weight, index)
             _plot_mean_band(
@@ -106,18 +112,20 @@ def plot_grouped_weights(
                 linestyle="--",
                 label=f"{weight} empirical FCP",
             )
-        axis.set_title(f"Goal {goal}")
+        axis.set_title(f"{title} — Goal {goal}")
         axis.set_xlabel(r"Miscoverage level $\alpha$")
+        axis.set_ylabel("FCP / bound")
         axis.grid(alpha=0.25)
-    axes[0].set_ylabel("FCP / bound")
-    axes[1].legend(fontsize=8, ncol=2)
-    figure.suptitle(title)
-    figure.tight_layout()
-    figure.savefig(output_directory / "grouped_weights_forward_goals_1_2.pdf", bbox_inches="tight")
-    plt.close(figure)
+        axis.legend(fontsize=8, ncol=2)
+        figure.tight_layout()
+        figure.savefig(
+            output_directory / f"grouped_weights_forward_goal_{goal}.pdf",
+            bbox_inches="tight",
+        )
+        plt.close(figure)
 
-    figure, axes = plt.subplots(1, 2, figsize=(14, 5), sharex=True, sharey=True)
-    for goal, axis in [(3, axes[0]), (4, axes[1])]:
+    for goal in (3, 4):
+        figure, axis = plt.subplots(figsize=(8, 5))
         axis.plot(beta, beta, color="#111111", linestyle="--", linewidth=2, label=r"Target $\beta$")
         for index, (weight, arrays) in enumerate(results.items()):
             _plot_mean_band(
@@ -127,18 +135,20 @@ def plot_grouped_weights(
                 _color(weight, index),
                 weight,
             )
-        axis.set_title(f"Goal {goal}")
+        axis.set_title(f"{title} — Goal {goal}")
         axis.set_xlabel(r"Target FCP $\beta$")
+        axis.set_ylabel("Empirical FCP")
         axis.grid(alpha=0.25)
-    axes[0].set_ylabel("Empirical FCP")
-    axes[1].legend(fontsize=9)
-    figure.suptitle(title)
-    figure.tight_layout()
-    figure.savefig(output_directory / "grouped_weights_inverse_goals_3_4.pdf", bbox_inches="tight")
-    plt.close(figure)
+        axis.legend(fontsize=9)
+        figure.tight_layout()
+        figure.savefig(
+            output_directory / f"grouped_weights_inverse_goal_{goal}.pdf",
+            bbox_inches="tight",
+        )
+        plt.close(figure)
 
-    figure, axes = plt.subplots(1, 2, figsize=(14, 5), sharex=True, sharey=True)
-    for goal, axis in [(3, axes[0]), (4, axes[1])]:
+    for goal in (3, 4):
+        figure, axis = plt.subplots(figsize=(8, 5))
         for index, (weight, arrays) in enumerate(results.items()):
             _plot_mean_band(
                 axis,
@@ -147,15 +157,17 @@ def plot_grouped_weights(
                 _color(weight, index),
                 weight,
             )
-        axis.set_title(f"Goal {goal}")
+        axis.set_title(f"{title} — Goal {goal}")
         axis.set_xlabel(r"Target FCP $\beta$")
+        axis.set_ylabel(r"Selected miscoverage $\alpha$")
         axis.grid(alpha=0.25)
-    axes[0].set_ylabel(r"Selected miscoverage $\alpha$")
-    axes[1].legend(fontsize=9)
-    figure.suptitle(title)
-    figure.tight_layout()
-    figure.savefig(output_directory / "grouped_weights_selected_alpha_goals_3_4.pdf", bbox_inches="tight")
-    plt.close(figure)
+        axis.legend(fontsize=9)
+        figure.tight_layout()
+        figure.savefig(
+            output_directory / f"grouped_weights_selected_alpha_goal_{goal}.pdf",
+            bbox_inches="tight",
+        )
+        plt.close(figure)
 
 
 def make_grouped_figures(config: dict[str, Any]) -> list[Path]:
