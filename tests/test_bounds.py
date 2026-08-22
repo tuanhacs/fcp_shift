@@ -11,3 +11,16 @@ def test_fixed_and_uniform_constants_are_positive():
     assert abs(fixed.delta_calibration + fixed.delta_test - 0.1) < 1e-10
     assert abs(uniform.delta_plus + uniform.delta_minus + uniform.delta_test - 0.1) < 1e-10
 
+
+def test_explicit_delta_allocations_are_respected():
+    fixed = fixed_constants(
+        2.0, n=1000, m=500, delta=0.1, calibration_fraction=0.25
+    )
+    uniform = uniform_constants(
+        2.0, n=1000, m=500, delta=0.1, side_fraction=0.2
+    )
+    assert abs(fixed.delta_calibration - 0.025) < 1e-12
+    assert abs(fixed.delta_test - 0.075) < 1e-12
+    assert abs(uniform.delta_plus - 0.02) < 1e-12
+    assert abs(uniform.delta_minus - 0.02) < 1e-12
+    assert abs(uniform.delta_test - 0.06) < 1e-12

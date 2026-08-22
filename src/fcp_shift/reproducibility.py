@@ -24,7 +24,9 @@ def stable_seed(*parts: Any) -> int:
 
 def environment_metadata() -> dict[str, Any]:
     packages = {}
-    for package in ["numpy", "pandas", "scipy", "scikit-learn", "matplotlib", "openml"]:
+    for package in [
+        "numpy", "pandas", "scipy", "scikit-learn", "matplotlib", "openml", "sanssouci"
+    ]:
         try:
             packages[package] = version(package)
         except PackageNotFoundError:
@@ -34,4 +36,3 @@ def environment_metadata() -> dict[str, Any]:
         "platform": platform.platform(),
         "packages": packages,
     }
-

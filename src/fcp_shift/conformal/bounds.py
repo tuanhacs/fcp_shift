@@ -70,8 +70,13 @@ def fixed_constants(
     mean_weight: float = 1.0,
     w_infinity: float = 1.0,
     optimize: bool = True,
+    calibration_fraction: float | None = None,
 ) -> FixedConstants:
-    if optimize:
+    if calibration_fraction is not None:
+        if not 0.0 < calibration_fraction < 1.0:
+            raise ValueError("calibration_fraction must lie in (0, 1)")
+        fraction = float(calibration_fraction)
+    elif optimize:
         objective = lambda fraction: _fixed_from_allocation(
             bound,
             n,
@@ -143,8 +148,13 @@ def uniform_constants(
     mean_weight: float = 1.0,
     w_infinity: float = 1.0,
     optimize: bool = True,
+    side_fraction: float | None = None,
 ) -> UniformConstants:
-    if optimize:
+    if side_fraction is not None:
+        if not 0.0 < side_fraction < 0.5:
+            raise ValueError("side_fraction must lie in (0, 0.5)")
+        fraction = float(side_fraction)
+    elif optimize:
         objective = lambda fraction: _uniform_from_fraction(
             bound, n, m, delta, fraction, mean_weight, w_infinity
         ).penalty
@@ -155,4 +165,3 @@ def uniform_constants(
     return _uniform_from_fraction(
         bound, n, m, delta, fraction, mean_weight, w_infinity
     )
-

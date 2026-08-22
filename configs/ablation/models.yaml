@@ -1,0 +1,22 @@
+experiment: {kind: ablation_models, repetitions: 100, seeds: [31415]}
+datasets:
+  - {name: adult, source: openml, openml_id: 1590, task: classification, train_fraction: 0.4}
+models:
+  - {name: hist_gradient_boosting, seed: 2026, learning_rate: 0.08, max_iter: 300, max_leaf_nodes: 31, early_stopping: false, classification_score: log_margin}
+  - {name: random_forest, seed: 2026, n_estimators: 300, min_samples_leaf: 2, n_jobs: -1, classification_score: log_margin}
+  - {name: logistic, seed: 2026, C: 1.0, max_iter: 500, n_jobs: -1, classification_score: log_margin}
+  - {name: mlp, seed: 2026, hidden_layer_sizes: [100, 50], alpha: 0.0001, max_iter: 300, early_stopping: true, classification_score: log_margin}
+weights:
+  - {name: exponential, strength: 0.35, clip_quantile: 0.995, ridge: 0.001}
+  - {name: quadratic, strength: 1.0, clip_quantile: 0.995, ridge: 0.001}
+  - {name: mahalanobis, strength: 1.0, clip_quantile: 0.995}
+sample_sizes: {n_calibration: 10000, m_test: 500}
+fcp:
+  delta: 0.1
+  w_infinity: 1.0
+  optimize_delta: true
+  eta: 1.0e-10
+  alpha_grid: {start: 0.0, stop: 1.0, points: 201}
+  beta_grid: {start: 0.0, stop: 1.0, points: 201}
+output: {root: outputs}
+

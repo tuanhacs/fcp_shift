@@ -1,0 +1,17 @@
+experiment: {kind: ablation_delta, repetitions: 2, seeds: [7]}
+datasets:
+  - {name: synth_a, source: synthetic_regression, task: regression, n_samples: 800, n_features: 5, train_fraction: 0.4, seed: 11}
+  - {name: synth_b, source: synthetic_regression, task: regression, n_samples: 900, n_features: 6, train_fraction: 0.4, seed: 12}
+model: {name: hist_gradient_boosting, seed: 3, max_iter: 15, max_leaf_nodes: 7, early_stopping: false}
+weights:
+  - {name: exponential, strength: 0.2, clip_quantile: 0.95}
+ablation:
+  alpha: 0.1
+  fixed_n: 60
+  fixed_m: 60
+  grid: [30, 60]
+  fixed_calibration_fractions: [0.25, 0.5]
+  uniform_side_fractions: [0.1, 0.2]
+fcp: {delta: 0.1, w_infinity: 1.0}
+output: {root: outputs/smoke}
+

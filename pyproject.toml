@@ -16,6 +16,7 @@ dependencies = [
   "PyYAML>=6.0",
   "scikit-learn>=1.4",
   "scipy>=1.11",
+  "sanssouci>=0.1",
 ]
 
 [project.optional-dependencies]
@@ -30,4 +31,3 @@ where = ["src"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
-

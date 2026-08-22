@@ -4,6 +4,7 @@ import argparse
 import logging
 
 from fcp_shift.config import filter_config, load_config
+from fcp_shift.ablations import RUNNERS as ABLATION_RUNNERS
 from fcp_shift.experiments import run_asymptotic, run_covariate_shift, run_transport_shift
 from fcp_shift.reporting import make_grouped_figures
 
@@ -45,6 +46,7 @@ def main(argv: list[str] | None = None) -> None:
         "covariate_shift": run_covariate_shift,
         "transport_shift": run_transport_shift,
         "asymptotic": run_asymptotic,
+        **ABLATION_RUNNERS,
     }
     runners[kind](config, force=args.force)
 

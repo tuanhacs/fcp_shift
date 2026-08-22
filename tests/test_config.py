@@ -7,4 +7,8 @@ def test_smoke_config_loads_and_filters():
     assert filtered["experiment"]["seeds"] == [9]
     assert len(filtered["datasets"]) == 1
     assert len(filtered["weights"]) == 1
-
+    assert filtered["_filters"] == {
+        "dataset": "synthetic_smoke",
+        "weight": "exponential",
+        "seed": 9,
+    }

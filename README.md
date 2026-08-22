@@ -8,6 +8,8 @@ This repository contains reproducible implementations of the three main experime
 
 The code is a standalone Python package. It does not depend on notebook state. Every run stores its resolved configuration, environment metadata, raw results, summaries, figures, and a completion marker.
 
+The six ablation workflows—Corollary convergence, delta allocation, underlying models, inference time, weight misspecification, and DKW/CoJER baselines—are documented in [docs/ABLATIONS.md](docs/ABLATIONS.md).
+
 ## Project layout
 
 ```text
@@ -93,6 +95,28 @@ Run all main experiments sequentially with:
 ```bash
 bash scripts/run_all_main.sh
 ```
+
+## Ablation studies
+
+Validate all ablation pipelines on local synthetic data:
+
+```bash
+bash scripts/run_ablation_smoke_tests.sh
+```
+
+Run the full YAML configurations:
+
+```bash
+bash scripts/run_ablation_studies.sh
+```
+
+Submit the six workflows as a SLURM array:
+
+```bash
+sbatch scripts/slurm/ablation_array.sbatch
+```
+
+See [the ablation guide](docs/ABLATIONS.md) for estimands, figure layouts, algorithm-name mapping, and output tables. In particular, the DKW/CoJER workflow compares the baselines against empirical FCP computed from ordinary unweighted conformal p-values under shift.
 
 ## Grouped weight figures
 

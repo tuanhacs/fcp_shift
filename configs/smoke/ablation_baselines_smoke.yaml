@@ -1,0 +1,18 @@
+experiment: {kind: ablation_baselines, repetitions: 3, seeds: [7]}
+datasets:
+  - {name: synth_baseline, source: synthetic_regression, task: regression, n_samples: 1000, n_features: 6, train_fraction: 0.4, seed: 13}
+model: {name: hist_gradient_boosting, seed: 3, max_iter: 15, max_leaf_nodes: 7, early_stopping: false}
+weights:
+  - {name: exponential, strength: 0.3, clip_quantile: 0.95}
+  - {name: quadratic, strength: 0.5, clip_quantile: 0.95}
+sample_sizes: {n_calibration: 50, m_test: 30}
+baselines:
+  cojer_template_simulations: 20
+  cojer_calibration_simulations: 40
+  cojer_seed: 123
+  cojer_k_max: null
+fcp:
+  delta: 0.1
+  alpha_grid: {start: 0.0, stop: 1.0, points: 11}
+  beta_grid: {start: 0.0, stop: 1.0, points: 11}
+output: {root: outputs/smoke}

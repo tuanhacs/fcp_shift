@@ -26,9 +26,14 @@ def load_config(path: str | Path) -> dict[str, Any]:
 def validate_config(config: dict[str, Any]) -> None:
     experiment = config.get("experiment", {})
     kind = experiment.get("kind")
-    if kind not in {"covariate_shift", "transport_shift", "asymptotic"}:
+    valid_kinds = {
+        "covariate_shift", "transport_shift", "asymptotic",
+        "ablation_corollary", "ablation_delta", "ablation_models",
+        "ablation_timing", "ablation_weights", "ablation_baselines",
+    }
+    if kind not in valid_kinds:
         raise ConfigError(
-            "experiment.kind must be covariate_shift, transport_shift, or asymptotic"
+            f"Unsupported experiment.kind: {kind!r}"
         )
     if int(experiment.get("repetitions", 0)) <= 0:
         raise ConfigError("experiment.repetitions must be positive")
@@ -60,24 +65,31 @@ def filter_config(
     seed: int | None = None,
 ) -> dict[str, Any]:
     result = deepcopy(config)
+    applied_filters: dict[str, Any] = {}
     if dataset is not None:
         result["datasets"] = [
             item for item in result.get("datasets", []) if item["name"] == dataset
         ]
         if not result["datasets"]:
             raise ConfigError(f"Dataset {dataset!r} is not present in the configuration")
+        applied_filters["dataset"] = dataset
     if weight is not None:
         result["weights"] = [
             item for item in result.get("weights", []) if item["name"] == weight
         ]
         if not result["weights"]:
             raise ConfigError(f"Weight {weight!r} is not present in the configuration")
+        applied_filters["weight"] = weight
     if rho is not None:
         if result["experiment"]["kind"] != "transport_shift":
             raise ConfigError("--rho is only valid for transport_shift")
         result.setdefault("transport", {})["rhos"] = [float(rho)]
+        applied_filters["rho"] = float(rho)
     if seed is not None:
         result["experiment"]["seeds"] = [int(seed)]
+        applied_filters["seed"] = int(seed)
+    if applied_filters:
+        result["_filters"] = applied_filters
     return result
 
 
@@ -85,4 +97,3 @@ def dump_config(config: dict[str, Any], path: str | Path) -> None:
     clean = {key: value for key, value in config.items() if not key.startswith("_")}
     with Path(path).open("w", encoding="utf-8") as handle:
         yaml.safe_dump(clean, handle, sort_keys=False)
-
