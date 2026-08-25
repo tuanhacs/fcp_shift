@@ -4,14 +4,26 @@ experiment:
   seeds: [31415]
 
 datasets:
-  - {name: adult, source: openml, openml_id: 1590, task: classification, train_fraction: 0.4}
-  - {name: bank_marketing, source: openml, openml_id: 1461, task: classification, train_fraction: 0.4}
-  - {name: electricity, source: openml, openml_id: 151, task: classification, train_fraction: 0.4}
-  - {name: miniboone, source: openml, openml_id: 41150, task: classification, train_fraction: 0.4}
-  - {name: fashion_mnist, source: openml, openml_id: 40996, task: classification, train_fraction: 0.4}
-  - {name: year, source: openml, openml_id: 44027, task: regression, train_fraction: 0.4}
-  - {name: diamonds, source: openml, openml_id: 42225, task: regression, train_fraction: 0.4}
-  - {name: allstate, source: openml, openml_id: 42571, task: regression, train_fraction: 0.4}
+  - {
+      name: adult,
+      source: openml,
+      openml_id: 1590,
+      task: classification,
+      train_fraction: 0.4,
+    }
+  # - {name: bank_marketing, source: openml, openml_id: 1461, task: classification, train_fraction: 0.4}
+  # - {name: electricity, source: openml, openml_id: 151, task: classification, train_fraction: 0.4}
+  # - {name: miniboone, source: openml, openml_id: 41150, task: classification, train_fraction: 0.4}
+  - {
+      name: fashion_mnist,
+      source: openml,
+      openml_id: 40996,
+      task: classification,
+      train_fraction: 0.4,
+    }
+  # - {name: year, source: openml, openml_id: 44027, task: regression, train_fraction: 0.4}
+  # - {name: diamonds, source: openml, openml_id: 42225, task: regression, train_fraction: 0.4}
+  # - {name: allstate, source: openml, openml_id: 42571, task: regression, train_fraction: 0.4}
 
 model:
   seed: 2026
@@ -22,9 +34,9 @@ model:
   classification_score: log_margin
 
 weights:
-  - {name: exponential, strength: 0.35, clip_quantile: 0.995, ridge: 0.001}
-  - {name: quadratic, strength: 1.0, clip_quantile: 0.995, ridge: 0.001}
-  - {name: mahalanobis, strength: 1.0, clip_quantile: 0.995}
+  - { name: exponential, strength: 0.35, clip_quantile: 0.995, ridge: 0.001 }
+  # - { name: quadratic, strength: 1.0, clip_quantile: 0.995, ridge: 0.001 }
+  # - { name: mahalanobis, strength: 1.0, clip_quantile: 0.995 }
 
 transport:
   strata: 5
@@ -39,9 +51,8 @@ fcp:
   w_infinity: 1.0
   optimize_delta: true
   eta: 1.0e-10
-  alpha_grid: {start: 0.0, stop: 1.0, points: 201}
-  beta_grid: {start: 0.0, stop: 1.0, points: 201}
+  alpha_grid: { start: 0.0, stop: 1.0, points: 201 }
+  beta_grid: { start: 0.0, stop: 1.0, points: 201 }
 
 output:
   root: outputs
-

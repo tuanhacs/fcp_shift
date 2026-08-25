@@ -29,7 +29,7 @@ CURVE_NAMES = (
 )
 
 
-def _load_weight_runs(weight_directory: Path) -> dict[str, np.ndarray] | None:
+def load_weight_runs(weight_directory: Path) -> dict[str, np.ndarray] | None:
     files = sorted(weight_directory.glob("seed_*/curves.npz"))
     if not files:
         return None
@@ -194,7 +194,7 @@ def make_grouped_figures(config: dict[str, Any]) -> list[Path]:
                 weight_directory = dataset_directory / weight
                 if rho is not None:
                     weight_directory = weight_directory / f"rho_{rho:.2f}"
-                loaded = _load_weight_runs(weight_directory)
+                loaded = load_weight_runs(weight_directory)
                 if loaded is not None:
                     results[weight] = loaded
             if not results:

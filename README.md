@@ -137,6 +137,34 @@ outputs/main_figures/covariate_shift/<dataset>/
 outputs/main_figures/transport_shift/<dataset>/rho_<value>/
 ```
 
+### Combined Covariate/Transport paper figure
+
+After running the same weight on multiple datasets in both shift settings, create one combined figure with:
+
+- row 1: Covariate Shift;
+- row 2: Transport Shift at one selected `rho`;
+- first `D` columns: Goals 1–2 together, one plot per dataset;
+- final `D` columns: Goals 3–4 together, one plot per dataset.
+
+For two datasets this produces the requested `2 x 4` layout:
+
+```bash
+bash scripts/make_combined_main_figure.sh exponential 0.50 year adult
+```
+
+The equivalent Python command is:
+
+```bash
+python -m fcp_shift.cli main-figure \
+  --covariate-config configs/main/covariate_shift.yaml \
+  --transport-config configs/main/transport_shift.yaml \
+  --weight exponential \
+  --rho 0.50 \
+  --datasets year adult
+```
+
+If `--datasets` is omitted, the command automatically includes every configured dataset for which both result directories exist. The output is saved as both PDF and PNG below `outputs/main_figures/combined/`.
+
 ## Selecting a dataset, weight, shift, or seed
 
 The CLI can filter a multi-dataset YAML without editing it:
