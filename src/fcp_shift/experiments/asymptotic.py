@@ -33,7 +33,11 @@ def run_asymptotic(config: dict[str, Any], force: bool = False) -> None:
     for seed in config["experiment"]["seeds"]:
         run = RunDirectory(output_root / "asymptotic" / "exponential" / f"seed_{seed}")
         if run.complete and not force:
-            LOGGER.info("Skipping completed run %s", run.path)
+            summary_path = run.path / "summary.csv"
+            if summary_path.exists():
+                plot_asymptotic(pd.read_csv(summary_path), run.path)
+                LOGGER.info("Refreshed asymptotic figure from %s", summary_path)
+            LOGGER.info("Skipping completed calculations in %s", run.path)
             continue
         rng = np.random.default_rng(stable_seed("simulation", seed))
         x_train, y_train = simulate_heteroscedastic_regression(
@@ -135,4 +139,3 @@ def run_asymptotic(config: dict[str, Any], force: bool = False) -> None:
         plot_asymptotic(summary, run.path)
         run.mark_complete()
         LOGGER.info("Completed %s", run.path)
-

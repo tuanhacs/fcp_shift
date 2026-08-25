@@ -8,48 +8,112 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.ticker import FixedLocator, FormatStrFormatter
 
 from .grouped import load_weight_runs
 
 
-def _mean_band(axis, x, values, color, label, linestyle="-") -> None:
+_PAPER_FONT_SIZE = 8.5
+_PAPER_TITLE_SIZE = 9.5
+_PAPER_LINE_WIDTH = 1.7
+_AXIS_TICKS = (0.0, 0.5, 1.0)
+
+
+def _mean_line(axis, x, values, color, label, linestyle="-") -> None:
     values = np.asarray(values, dtype=float)
     mean = values.mean(axis=0)
-    lower, upper = np.quantile(values, [0.1, 0.9], axis=0)
-    axis.fill_between(x, lower, upper, color=color, alpha=0.12)
-    axis.plot(x, mean, color=color, linewidth=2, linestyle=linestyle, label=label)
+    axis.plot(
+        x,
+        mean,
+        color=color,
+        linewidth=_PAPER_LINE_WIDTH,
+        linestyle=linestyle,
+        label=label,
+    )
 
 
-def _plot_forward(axis, arrays: dict[str, np.ndarray], title: str, legend: bool) -> None:
-    alpha = arrays["alpha"]
-    _mean_band(axis, alpha, arrays["empirical_fcp"], "#111111", "Empirical FCP")
-    _mean_band(axis, alpha, arrays["goal1_bound"], "#0072B2", "Goal 1 bound")
-    _mean_band(axis, alpha, arrays["goal2_bound"], "#D55E00", "Goal 2 bound")
-    axis.set_title(title)
-    axis.set_xlabel(r"Miscoverage $\alpha$")
-    axis.set_ylabel("FCP / bound")
+def _format_axis(axis, *, forward: bool, y_tick_max: float = 1.0) -> None:
     axis.set_xlim(0.0, 1.0)
-    axis.set_ylim(bottom=0.0)
-    axis.grid(alpha=0.25)
+    axis.set_ylim(0.0, y_tick_max * (1.02 if forward else 1.05))
+    axis.xaxis.set_major_locator(FixedLocator(_AXIS_TICKS))
+    axis.yaxis.set_major_locator(FixedLocator((0.0, y_tick_max / 2.0, y_tick_max)))
+    axis.xaxis.set_major_formatter(FormatStrFormatter("%.1f"))
+    axis.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
+    axis.tick_params(axis="both", which="major", labelsize=_PAPER_FONT_SIZE, length=3)
+    axis.grid(alpha=0.20, linewidth=0.55)
+    for spine in axis.spines.values():
+        spine.set_linewidth(0.8)
+
+
+def _plot_forward(
+    axis,
+    arrays: dict[str, np.ndarray],
+    title: str,
+    legend: bool,
+    show_ylabel: bool,
+) -> None:
+    alpha = arrays["alpha"]
+    _mean_line(axis, alpha, arrays["empirical_fcp"], "#111111", "Empirical FCP")
+    _mean_line(axis, alpha, arrays["goal1_bound"], "#0072B2", "Goal 1 bound")
+    _mean_line(axis, alpha, arrays["goal2_bound"], "#D55E00", "Goal 2 bound")
+    axis.set_title(title, fontsize=_PAPER_TITLE_SIZE, pad=3)
+    axis.set_xlabel(r"Miscoverage $\alpha$", fontsize=_PAPER_FONT_SIZE, labelpad=2)
+    if show_ylabel:
+        axis.set_ylabel("FCP / bound", fontsize=_PAPER_FONT_SIZE, labelpad=2)
+    largest_value = max(
+        float(np.nanmax(np.asarray(arrays[key], dtype=float).mean(axis=0)))
+        for key in ("empirical_fcp", "goal1_bound", "goal2_bound")
+    )
+    # Use a clean 0.2 increment so the three y tick labels remain readable.
+    y_tick_max = max(1.0, np.ceil(largest_value * 5.0 - 1e-9) / 5.0)
+    _format_axis(axis, forward=True, y_tick_max=y_tick_max)
     if legend:
-        axis.legend(fontsize=7, loc="upper left")
+        axis.legend(
+            fontsize=6.6,
+            loc="upper left",
+            frameon=True,
+            framealpha=0.9,
+            borderpad=0.25,
+            labelspacing=0.25,
+            handlelength=1.8,
+            handletextpad=0.4,
+        )
 
 
-def _plot_inverse(axis, arrays: dict[str, np.ndarray], title: str, legend: bool) -> None:
+def _plot_inverse(
+    axis,
+    arrays: dict[str, np.ndarray],
+    title: str,
+    legend: bool,
+    show_ylabel: bool,
+) -> None:
     beta = arrays["beta"]
     axis.plot(
-        beta, beta, color="#111111", linewidth=2, linestyle="--", label=r"Target $\beta$"
+        beta,
+        beta,
+        color="#111111",
+        linewidth=_PAPER_LINE_WIDTH,
+        linestyle="--",
+        label=r"Target $\beta$",
     )
-    _mean_band(axis, beta, arrays["goal3_fcp"], "#009E73", "Goal 3 FCP")
-    _mean_band(axis, beta, arrays["goal4_fcp"], "#CC79A7", "Goal 4 FCP")
-    axis.set_title(title)
-    axis.set_xlabel(r"Target FCP $\beta$")
-    axis.set_ylabel("Empirical FCP")
-    axis.set_xlim(0.0, 1.0)
-    axis.set_ylim(bottom=0.0)
-    axis.grid(alpha=0.25)
+    _mean_line(axis, beta, arrays["goal3_fcp"], "#009E73", "Goal 3 FCP")
+    _mean_line(axis, beta, arrays["goal4_fcp"], "#CC79A7", "Goal 4 FCP")
+    axis.set_title(title, fontsize=_PAPER_TITLE_SIZE, pad=3)
+    axis.set_xlabel(r"Target FCP $\beta$", fontsize=_PAPER_FONT_SIZE, labelpad=2)
+    if show_ylabel:
+        axis.set_ylabel("Empirical FCP", fontsize=_PAPER_FONT_SIZE, labelpad=2)
+    _format_axis(axis, forward=False)
     if legend:
-        axis.legend(fontsize=7, loc="upper left")
+        axis.legend(
+            fontsize=6.6,
+            loc="upper left",
+            frameon=True,
+            framealpha=0.9,
+            borderpad=0.25,
+            labelspacing=0.25,
+            handlelength=1.8,
+            handletextpad=0.4,
+        )
 
 
 def _display_name(dataset: dict[str, Any]) -> str:
@@ -117,53 +181,69 @@ def make_covariate_transport_figure(
     figure, axes = plt.subplots(
         2,
         2 * dataset_count,
-        figsize=(4.2 * 2 * dataset_count, 8.0),
+        figsize=(3.5 * dataset_count, 3.6),
         squeeze=False,
     )
     for column, name in enumerate(selected):
         title = _display_name(covariate_datasets[name])
         _plot_forward(
-            axes[0, column], curves[("covariate", name)], f"{title}: Goals 1-2", column == 0
+            axes[0, column],
+            curves[("covariate", name)],
+            title,
+            column == 0,
+            column == 0,
         )
         _plot_forward(
-            axes[1, column], curves[("transport", name)], f"{title}: Goals 1-2", column == 0
+            axes[1, column],
+            curves[("transport", name)],
+            title,
+            False,
+            column == 0,
         )
         inverse_column = dataset_count + column
         _plot_inverse(
             axes[0, inverse_column],
             curves[("covariate", name)],
-            f"{title}: Goals 3-4",
+            title,
+            column == 0,
             column == 0,
         )
         _plot_inverse(
             axes[1, inverse_column],
             curves[("transport", name)],
-            f"{title}: Goals 3-4",
+            title,
+            False,
             column == 0,
         )
 
     axes[0, 0].annotate(
         "Covariate Shift",
-        xy=(-0.30, 0.5),
+        xy=(-0.48, 0.5),
         xycoords="axes fraction",
         rotation=90,
         ha="center",
         va="center",
-        fontsize=13,
+        fontsize=_PAPER_TITLE_SIZE,
         fontweight="bold",
     )
     axes[1, 0].annotate(
         f"Transport Shift (rho={rho:g})",
-        xy=(-0.30, 0.5),
+        xy=(-0.48, 0.5),
         xycoords="axes fraction",
         rotation=90,
         ha="center",
         va="center",
-        fontsize=13,
+        fontsize=_PAPER_TITLE_SIZE,
         fontweight="bold",
     )
-    figure.suptitle(f"FCP guarantees with {weight} weight", fontsize=15)
-    figure.tight_layout(rect=(0.025, 0.0, 1.0, 0.97))
+    figure.subplots_adjust(
+        left=0.105,
+        right=0.995,
+        bottom=0.14,
+        top=0.94,
+        wspace=0.32,
+        hspace=0.47,
+    )
 
     if output_path is None:
         destination = covariate_root / "main_figures" / "combined"
@@ -176,7 +256,7 @@ def make_covariate_transport_figure(
             pdf_path = pdf_path.with_suffix(".pdf")
         pdf_path.parent.mkdir(parents=True, exist_ok=True)
     png_path = pdf_path.with_suffix(".png")
-    figure.savefig(pdf_path, bbox_inches="tight")
-    figure.savefig(png_path, dpi=220, bbox_inches="tight")
+    figure.savefig(pdf_path, bbox_inches="tight", pad_inches=0.02)
+    figure.savefig(png_path, dpi=300, bbox_inches="tight", pad_inches=0.02)
     plt.close(figure)
     return pdf_path, png_path

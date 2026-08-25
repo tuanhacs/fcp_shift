@@ -8,6 +8,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.ticker import FixedLocator, FuncFormatter, FormatStrFormatter
 
 
 COLORS = {
@@ -74,38 +75,114 @@ def plot_goal_results(
     plt.close(figure)
 
 
-def plot_asymptotic(summary: pd.DataFrame, output_dir: str | Path) -> None:
+def _compact_sample_size(value: float, _position: int | None = None) -> str:
+    if value >= 1_000_000:
+        return f"{value / 1_000_000:g}M"
+    if value >= 1_000:
+        return f"{value / 1_000:g}k"
+    return f"{value:g}"
+
+
+def _three_observed_ticks(values: np.ndarray) -> np.ndarray:
+    values = np.unique(np.asarray(values, dtype=float))
+    if len(values) <= 3:
+        return values
+    indices = np.rint(np.linspace(0, len(values) - 1, 3)).astype(int)
+    return values[indices]
+
+
+def plot_asymptotic(
+    summary: pd.DataFrame, output_dir: str | Path
+) -> tuple[Path, Path]:
+    """Create one publication-ready 1 x 3 asymptotic figure."""
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     definitions = {
-        "m_increases": ("m", r"Test size $m$ ($n$ fixed)"),
-        "n_increases": ("n", r"Calibration size $n$ ($m$ fixed)"),
-        "n_equals_m": ("n", r"Joint size $n=m$"),
+        "m_increases": ("m", r"Test size $m$", r"$m \to \infty$ ($n$ fixed)"),
+        "n_increases": ("n", r"Calibration size $n$", r"$n \to \infty$ ($m$ fixed)"),
+        "n_equals_m": ("n", r"Joint size $n=m$", r"$m=n \to \infty$"),
     }
-    for path_name, (x_column, xlabel) in definitions.items():
+    line_styles = {
+        1: ("-", "o"),
+        2: ("--", "s"),
+        3: ("-.", "^"),
+        4: (":", "D"),
+    }
+
+    maximum = float(
+        summary[[f"goal{goal}_mean" for goal in range(1, 5)]].to_numpy().max()
+    )
+    y_tick_max = max(1.0, np.ceil(maximum * 5.0 - 1e-9) / 5.0)
+    y_ticks = (0.0, y_tick_max / 2.0, y_tick_max)
+
+    figure, axes = plt.subplots(
+        1,
+        3,
+        figsize=(7.0, 2.55),
+        sharey=True,
+        squeeze=False,
+    )
+    axes = axes[0]
+    for panel, (path_name, (x_column, xlabel, title)) in enumerate(definitions.items()):
         subset = summary[summary["path"] == path_name].sort_values(x_column)
-        figure, axis = plt.subplots(figsize=(8, 5))
+        if subset.empty:
+            raise ValueError(f"Missing asymptotic results for path {path_name!r}")
+        axis = axes[panel]
         for goal in range(1, 5):
+            linestyle, marker = line_styles[goal]
             axis.plot(
                 subset[x_column],
                 subset[f"goal{goal}_mean"],
-                marker="o",
                 color=COLORS[f"goal{goal}"],
                 label=f"Goal {goal}",
-            )
-            axis.fill_between(
-                subset[x_column],
-                np.maximum(subset[f"goal{goal}_mean"] - subset[f"goal{goal}_std"], 0.0),
-                subset[f"goal{goal}_mean"] + subset[f"goal{goal}_std"],
-                color=COLORS[f"goal{goal}"],
-                alpha=0.12,
+                linewidth=1.7,
+                linestyle=linestyle,
+                marker=marker,
+                markersize=3.2,
+                markeredgewidth=0.5,
             )
         axis.set_xscale("log")
-        axis.set_xlabel(xlabel)
-        axis.set_ylabel(r"Calculated quantity in $\mathbb{R}^{+}$")
-        axis.grid(alpha=0.25)
-        axis.legend()
-        figure.tight_layout()
-        figure.savefig(output_dir / f"asymptotic_{path_name}.pdf", bbox_inches="tight")
-        plt.close(figure)
+        axis.set_title(title, fontsize=9.5, pad=3)
+        axis.set_xlabel(xlabel, fontsize=8.5, labelpad=2)
+        # A tiny visual margin keeps markers at zero visible; all labeled ticks stay in R+.
+        axis.set_ylim(-0.02 * y_tick_max, y_tick_max * 1.04)
+        axis.xaxis.set_major_locator(
+            FixedLocator(_three_observed_ticks(subset[x_column].to_numpy()))
+        )
+        axis.xaxis.set_major_formatter(FuncFormatter(_compact_sample_size))
+        axis.xaxis.set_minor_locator(FixedLocator([]))
+        axis.yaxis.set_major_locator(FixedLocator(y_ticks))
+        axis.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
+        axis.tick_params(axis="both", which="major", labelsize=8.5, length=3)
+        axis.grid(alpha=0.20, linewidth=0.55)
+        for spine in axis.spines.values():
+            spine.set_linewidth(0.8)
+    axes[0].set_ylabel(r"Calculated quantity in $\mathbb{R}^{+}$", fontsize=8.5, labelpad=2)
 
+    handles, labels = axes[0].get_legend_handles_labels()
+    figure.legend(
+        handles,
+        labels,
+        loc="upper center",
+        ncol=4,
+        frameon=False,
+        fontsize=8.0,
+        bbox_to_anchor=(0.5, 1.0),
+        handlelength=2.2,
+        columnspacing=1.2,
+        handletextpad=0.45,
+    )
+    figure.subplots_adjust(
+        left=0.095,
+        right=0.995,
+        bottom=0.22,
+        top=0.78,
+        wspace=0.16,
+    )
+
+    pdf_path = output_dir / "asymptotic_1x3.pdf"
+    png_path = output_dir / "asymptotic_1x3.png"
+    figure.savefig(pdf_path, bbox_inches="tight", pad_inches=0.02)
+    figure.savefig(png_path, dpi=300, bbox_inches="tight", pad_inches=0.02)
+    plt.close(figure)
+    return pdf_path, png_path
