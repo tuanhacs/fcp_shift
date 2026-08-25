@@ -158,7 +158,7 @@ def plot_asymptotic(
         for spine in axis.spines.values():
             spine.set_linewidth(0.8)
     axes[0].set_ylabel(
-        r"Calculated quantity in $\mathbb{R}^{+}$", fontsize=10.5, labelpad=4
+        r"Calculated quantity", fontsize=10.5, labelpad=4
     )
 
     handles, labels = axes[0].get_legend_handles_labels()
