@@ -112,7 +112,12 @@ def plot_asymptotic(
     maximum = float(
         summary[[f"goal{goal}_mean" for goal in range(1, 5)]].to_numpy().max()
     )
-    y_tick_max = max(1.0, np.ceil(maximum * 5.0 - 1e-9) / 5.0)
+    # Keep a zero baseline, but avoid wasting vertical space up to 1 when all
+    # calculated quantities are much smaller. Use a clean 0.1 upper tick and
+    # leave at least half a tick of headroom above the largest curve.
+    y_tick_max = max(0.1, np.ceil(maximum * 10.0 - 1e-9) / 10.0)
+    if y_tick_max - maximum < 0.05:
+        y_tick_max += 0.1
     y_ticks = (0.0, y_tick_max / 2.0, y_tick_max)
 
     figure, axes = plt.subplots(
@@ -144,15 +149,14 @@ def plot_asymptotic(
         axis.set_xscale("log")
         axis.set_title(title, fontsize=11.5, pad=5)
         axis.set_xlabel(xlabel, fontsize=10.5, labelpad=4)
-        # A tiny visual margin keeps markers at zero visible; all labeled ticks stay in R+.
-        axis.set_ylim(-0.02 * y_tick_max, y_tick_max * 1.04)
+        axis.set_ylim(0.0, y_tick_max * 1.02)
         axis.xaxis.set_major_locator(
             FixedLocator(_three_observed_ticks(subset[x_column].to_numpy()))
         )
         axis.xaxis.set_major_formatter(FuncFormatter(_compact_sample_size))
         axis.xaxis.set_minor_locator(FixedLocator([]))
         axis.yaxis.set_major_locator(FixedLocator(y_ticks))
-        axis.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
+        axis.yaxis.set_major_formatter(FormatStrFormatter("%.2g"))
         axis.tick_params(axis="both", which="major", labelsize=10.0, length=4)
         axis.grid(alpha=0.20, linewidth=0.65)
         for spine in axis.spines.values():
