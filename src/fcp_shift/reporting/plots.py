@@ -118,7 +118,7 @@ def plot_asymptotic(
     figure, axes = plt.subplots(
         1,
         3,
-        figsize=(7.0, 2.55),
+        figsize=(9.6, 3.8),
         sharey=True,
         squeeze=False,
     )
@@ -135,15 +135,15 @@ def plot_asymptotic(
                 subset[f"goal{goal}_mean"],
                 color=COLORS[f"goal{goal}"],
                 label=f"Goal {goal}",
-                linewidth=1.7,
+                linewidth=2.1,
                 linestyle=linestyle,
                 marker=marker,
-                markersize=3.2,
-                markeredgewidth=0.5,
+                markersize=4.5,
+                markeredgewidth=0.7,
             )
         axis.set_xscale("log")
-        axis.set_title(title, fontsize=9.5, pad=3)
-        axis.set_xlabel(xlabel, fontsize=8.5, labelpad=2)
+        axis.set_title(title, fontsize=11.5, pad=5)
+        axis.set_xlabel(xlabel, fontsize=10.5, labelpad=4)
         # A tiny visual margin keeps markers at zero visible; all labeled ticks stay in R+.
         axis.set_ylim(-0.02 * y_tick_max, y_tick_max * 1.04)
         axis.xaxis.set_major_locator(
@@ -153,11 +153,13 @@ def plot_asymptotic(
         axis.xaxis.set_minor_locator(FixedLocator([]))
         axis.yaxis.set_major_locator(FixedLocator(y_ticks))
         axis.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
-        axis.tick_params(axis="both", which="major", labelsize=8.5, length=3)
-        axis.grid(alpha=0.20, linewidth=0.55)
+        axis.tick_params(axis="both", which="major", labelsize=10.0, length=4)
+        axis.grid(alpha=0.20, linewidth=0.65)
         for spine in axis.spines.values():
             spine.set_linewidth(0.8)
-    axes[0].set_ylabel(r"Calculated quantity in $\mathbb{R}^{+}$", fontsize=8.5, labelpad=2)
+    axes[0].set_ylabel(
+        r"Calculated quantity in $\mathbb{R}^{+}$", fontsize=10.5, labelpad=4
+    )
 
     handles, labels = axes[0].get_legend_handles_labels()
     figure.legend(
@@ -166,23 +168,23 @@ def plot_asymptotic(
         loc="upper center",
         ncol=4,
         frameon=False,
-        fontsize=8.0,
-        bbox_to_anchor=(0.5, 1.0),
-        handlelength=2.2,
-        columnspacing=1.2,
-        handletextpad=0.45,
+        fontsize=10.0,
+        bbox_to_anchor=(0.5, 0.995),
+        handlelength=2.4,
+        columnspacing=1.5,
+        handletextpad=0.5,
     )
     figure.subplots_adjust(
-        left=0.095,
-        right=0.995,
-        bottom=0.22,
-        top=0.78,
-        wspace=0.16,
+        left=0.085,
+        right=0.99,
+        bottom=0.18,
+        top=0.79,
+        wspace=0.18,
     )
 
     pdf_path = output_dir / "asymptotic_1x3.pdf"
     png_path = output_dir / "asymptotic_1x3.png"
     figure.savefig(pdf_path, bbox_inches="tight", pad_inches=0.02)
-    figure.savefig(png_path, dpi=300, bbox_inches="tight", pad_inches=0.02)
+    figure.savefig(png_path, dpi=400, bbox_inches="tight", pad_inches=0.03)
     plt.close(figure)
     return pdf_path, png_path

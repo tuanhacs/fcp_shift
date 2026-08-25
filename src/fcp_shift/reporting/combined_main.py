@@ -13,9 +13,9 @@ from matplotlib.ticker import FixedLocator, FormatStrFormatter
 from .grouped import load_weight_runs
 
 
-_PAPER_FONT_SIZE = 8.5
-_PAPER_TITLE_SIZE = 9.5
-_PAPER_LINE_WIDTH = 1.7
+_PAPER_FONT_SIZE = 10.0
+_PAPER_TITLE_SIZE = 11.0
+_PAPER_LINE_WIDTH = 2.1
 _AXIS_TICKS = (0.0, 0.5, 1.0)
 
 
@@ -69,13 +69,13 @@ def _plot_forward(
     _format_axis(axis, forward=True, y_tick_max=y_tick_max)
     if legend:
         axis.legend(
-            fontsize=6.6,
+            fontsize=8.0,
             loc="upper left",
             frameon=True,
             framealpha=0.9,
             borderpad=0.25,
             labelspacing=0.25,
-            handlelength=1.8,
+            handlelength=2.0,
             handletextpad=0.4,
         )
 
@@ -105,13 +105,13 @@ def _plot_inverse(
     _format_axis(axis, forward=False)
     if legend:
         axis.legend(
-            fontsize=6.6,
+            fontsize=8.0,
             loc="upper left",
             frameon=True,
             framealpha=0.9,
             borderpad=0.25,
             labelspacing=0.25,
-            handlelength=1.8,
+            handlelength=2.0,
             handletextpad=0.4,
         )
 
@@ -181,7 +181,9 @@ def make_covariate_transport_figure(
     figure, axes = plt.subplots(
         2,
         2 * dataset_count,
-        figsize=(3.5 * dataset_count, 3.6),
+        # A 2x4 figure needs more than a nominal 7-inch canvas; it can be
+        # scaled to \textwidth in LaTeX without losing quality because PDF is vector.
+        figsize=(5.0 * dataset_count, 5.0),
         squeeze=False,
     )
     for column, name in enumerate(selected):
@@ -237,12 +239,12 @@ def make_covariate_transport_figure(
         fontweight="bold",
     )
     figure.subplots_adjust(
-        left=0.105,
+        left=0.09,
         right=0.995,
-        bottom=0.14,
-        top=0.94,
-        wspace=0.32,
-        hspace=0.47,
+        bottom=0.12,
+        top=0.95,
+        wspace=0.34,
+        hspace=0.42,
     )
 
     if output_path is None:
@@ -257,6 +259,6 @@ def make_covariate_transport_figure(
         pdf_path.parent.mkdir(parents=True, exist_ok=True)
     png_path = pdf_path.with_suffix(".png")
     figure.savefig(pdf_path, bbox_inches="tight", pad_inches=0.02)
-    figure.savefig(png_path, dpi=300, bbox_inches="tight", pad_inches=0.02)
+    figure.savefig(png_path, dpi=400, bbox_inches="tight", pad_inches=0.03)
     plt.close(figure)
     return pdf_path, png_path
