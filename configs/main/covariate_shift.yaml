@@ -46,7 +46,7 @@ weights:
 
 sample_sizes:
   n_calibration: 10000
-  m_test: 50
+  m_test: 100
 
 fcp:
   delta: 0.1
