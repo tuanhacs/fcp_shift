@@ -237,7 +237,7 @@ def make_covariate_transport_figure(
 
     axes[0, 0].annotate(
         "Covariate Shift",
-        xy=(-0.48, 0.5),
+        xy=(-0.22, 0.5),
         xycoords="axes fraction",
         rotation=90,
         ha="center",
@@ -247,7 +247,7 @@ def make_covariate_transport_figure(
     )
     axes[1, 0].annotate(
         f"Transport Shift (rho={rho:g})",
-        xy=(-0.48, 0.5),
+        xy=(-0.22, 0.5),
         xycoords="axes fraction",
         rotation=90,
         ha="center",
