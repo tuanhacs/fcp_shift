@@ -22,6 +22,17 @@ _AXIS_TICKS = (0.0, 0.5, 1.0)
 def _mean_line(axis, x, values, color, label, linestyle="-") -> None:
     values = np.asarray(values, dtype=float)
     mean = values.mean(axis=0)
+    if values.shape[0] > 1:
+        std = values.std(axis=0, ddof=1)
+        axis.fill_between(
+            x,
+            np.maximum(mean - std, 0.0),
+            mean + std,
+            color=color,
+            alpha=0.14,
+            linewidth=0,
+            zorder=1,
+        )
     axis.plot(
         x,
         mean,
@@ -29,6 +40,7 @@ def _mean_line(axis, x, values, color, label, linestyle="-") -> None:
         linewidth=_PAPER_LINE_WIDTH,
         linestyle=linestyle,
         label=label,
+        zorder=2,
     )
 
 
@@ -40,7 +52,8 @@ def _format_axis(axis, *, forward: bool, y_tick_max: float = 1.0) -> None:
     axis.xaxis.set_major_formatter(FormatStrFormatter("%.1f"))
     axis.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
     axis.tick_params(axis="both", which="major", labelsize=_PAPER_FONT_SIZE, length=3)
-    axis.grid(alpha=0.20, linewidth=0.55)
+    axis.grid(True, which="major", color="#A8A8A8", alpha=0.48, linewidth=0.75)
+    axis.set_axisbelow(True)
     for spine in axis.spines.values():
         spine.set_linewidth(0.8)
 
@@ -60,10 +73,14 @@ def _plot_forward(
     axis.set_xlabel(r"Miscoverage $\alpha$", fontsize=_PAPER_FONT_SIZE, labelpad=2)
     if show_ylabel:
         axis.set_ylabel("FCP / bound", fontsize=_PAPER_FONT_SIZE, labelpad=2)
-    largest_value = max(
-        float(np.nanmax(np.asarray(arrays[key], dtype=float).mean(axis=0)))
-        for key in ("empirical_fcp", "goal1_bound", "goal2_bound")
-    )
+    upper_values = []
+    for key in ("empirical_fcp", "goal1_bound", "goal2_bound"):
+        values = np.asarray(arrays[key], dtype=float)
+        upper = values.mean(axis=0)
+        if values.shape[0] > 1:
+            upper = upper + values.std(axis=0, ddof=1)
+        upper_values.append(float(np.nanmax(upper)))
+    largest_value = max(upper_values)
     # Use a clean 0.2 increment so the three y tick labels remain readable.
     y_tick_max = max(1.0, np.ceil(largest_value * 5.0 - 1e-9) / 5.0)
     _format_axis(axis, forward=True, y_tick_max=y_tick_max)
@@ -183,7 +200,7 @@ def make_covariate_transport_figure(
         2 * dataset_count,
         # A 2x4 figure needs more than a nominal 7-inch canvas; it can be
         # scaled to \textwidth in LaTeX without losing quality because PDF is vector.
-        figsize=(5.0 * dataset_count, 5.0),
+        figsize=(6.0 * dataset_count, 4.8),
         squeeze=False,
     )
     for column, name in enumerate(selected):
@@ -243,8 +260,8 @@ def make_covariate_transport_figure(
         right=0.995,
         bottom=0.12,
         top=0.95,
-        wspace=0.34,
-        hspace=0.42,
+        wspace=0.30,
+        hspace=0.44,
     )
 
     if output_path is None:
