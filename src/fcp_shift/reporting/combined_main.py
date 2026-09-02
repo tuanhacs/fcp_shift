@@ -46,7 +46,7 @@ def _mean_line(axis, x, values, color, label, linestyle="-") -> None:
 
 def _format_axis(axis, *, forward: bool, y_tick_max: float = 1.0) -> None:
     axis.set_xlim(0.0, 1.0)
-    axis.set_ylim(0.0, y_tick_max * (1.02 if forward else 1.05))
+    axis.set_ylim(0.0, y_tick_max if forward else y_tick_max * 1.05)
     axis.xaxis.set_major_locator(FixedLocator(_AXIS_TICKS))
     axis.yaxis.set_major_locator(FixedLocator((0.0, y_tick_max / 2.0, y_tick_max)))
     axis.xaxis.set_major_formatter(FormatStrFormatter("%.1f"))
@@ -73,17 +73,7 @@ def _plot_forward(
     axis.set_xlabel(r"Miscoverage $\alpha$", fontsize=_PAPER_FONT_SIZE, labelpad=2)
     if show_ylabel:
         axis.set_ylabel("FCP / bound", fontsize=_PAPER_FONT_SIZE, labelpad=2)
-    upper_values = []
-    for key in ("empirical_fcp", "goal1_bound", "goal2_bound"):
-        values = np.asarray(arrays[key], dtype=float)
-        upper = values.mean(axis=0)
-        if values.shape[0] > 1:
-            upper = upper + values.std(axis=0, ddof=1)
-        upper_values.append(float(np.nanmax(upper)))
-    largest_value = max(upper_values)
-    # Use a clean 0.2 increment so the three y tick labels remain readable.
-    y_tick_max = max(1.0, np.ceil(largest_value * 5.0 - 1e-9) / 5.0)
-    _format_axis(axis, forward=True, y_tick_max=y_tick_max)
+    _format_axis(axis, forward=True, y_tick_max=1.0)
     if legend:
         axis.legend(
             fontsize=8.0,
