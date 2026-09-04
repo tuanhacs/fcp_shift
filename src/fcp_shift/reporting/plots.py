@@ -129,7 +129,7 @@ def plot_asymptotic(
     figure, axes = plt.subplots(
         1,
         3,
-        figsize=(11.2, 3.8),
+        figsize=(14, 4.5),
         sharey=True,
         squeeze=False,
     )
@@ -200,13 +200,13 @@ def plot_asymptotic(
     axes[0].legend(
         [legend_items[label] for label in ordered_labels],
         ordered_labels,
-        loc="upper left",
+        loc="center right",
         ncol=2,
         frameon=True,
         framealpha=0.88,
         facecolor="white",
         edgecolor="#C8C8C8",
-        fontsize=8.0,
+        fontsize=10.0,
         borderpad=0.35,
         labelspacing=0.25,
         handlelength=2.1,
