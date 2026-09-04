@@ -92,7 +92,10 @@ def _three_observed_ticks(values: np.ndarray) -> np.ndarray:
 
 
 def plot_asymptotic(
-    summary: pd.DataFrame, output_dir: str | Path
+    summary: pd.DataFrame,
+    output_dir: str | Path,
+    alpha: float | None = None,
+    beta: float | None = None,
 ) -> tuple[Path, Path]:
     """Create one publication-ready 1 x 3 asymptotic figure."""
     output_dir = Path(output_dir)
@@ -112,6 +115,9 @@ def plot_asymptotic(
     maximum = float(
         summary[[f"goal{goal}_mean" for goal in range(1, 5)]].to_numpy().max()
     )
+    reference_values = [value for value in (alpha, beta) if value is not None]
+    if reference_values:
+        maximum = max(maximum, *reference_values)
     # Keep a zero baseline, but avoid wasting vertical space up to 1 when all
     # calculated quantities are much smaller. Use a clean 0.1 upper tick and
     # leave at least half a tick of headroom above the largest curve.
@@ -133,6 +139,24 @@ def plot_asymptotic(
         if subset.empty:
             raise ValueError(f"Missing asymptotic results for path {path_name!r}")
         axis = axes[panel]
+        if alpha is not None:
+            axis.axhline(
+                alpha,
+                color="#4D4D4D",
+                linewidth=1.6,
+                linestyle=(0, (5, 2)),
+                label=rf"$\alpha={alpha:g}$",
+                zorder=1,
+            )
+        if beta is not None:
+            axis.axhline(
+                beta,
+                color="#7A7A7A",
+                linewidth=1.6,
+                linestyle=(0, (1.5, 2)),
+                label=rf"$\beta={beta:g}$",
+                zorder=1,
+            )
         for goal in range(1, 5):
             linestyle, marker = line_styles[goal]
             axis.plot(
@@ -145,6 +169,7 @@ def plot_asymptotic(
                 marker=marker,
                 markersize=4.5,
                 markeredgewidth=0.7,
+                zorder=2,
             )
         axis.set_xscale("log")
         axis.set_title(title, fontsize=11.5, pad=5)
@@ -166,11 +191,17 @@ def plot_asymptotic(
     )
 
     handles, labels = axes[0].get_legend_handles_labels()
+    legend_items = dict(zip(labels, handles))
+    ordered_labels = [f"Goal {goal}" for goal in range(1, 5)]
+    if alpha is not None:
+        ordered_labels.append(rf"$\alpha={alpha:g}$")
+    if beta is not None:
+        ordered_labels.append(rf"$\beta={beta:g}$")
     figure.legend(
-        handles,
-        labels,
+        [legend_items[label] for label in ordered_labels],
+        ordered_labels,
         loc="upper center",
-        ncol=4,
+        ncol=6,
         frameon=False,
         fontsize=10.0,
         bbox_to_anchor=(0.5, 0.995),

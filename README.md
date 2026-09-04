@@ -84,7 +84,7 @@ bash scripts/run_asymptotic.sh
 
 The asymptotic experiment uses simulated heteroscedastic regression data and exponential weights. It creates one publication-ready 1x3 figure, `asymptotic_1x3.pdf`, plus a 400-DPI PNG copy. The panels respectively show increasing `m` with fixed `n`, increasing `n` with fixed `m`, and jointly increasing `n=m`.
 
-Every panel contains the mean calculated quantities for Goals 1–4. Values are **not clipped at one**, the panels share the same vertical scale, and the vertical axis is a nonnegative real-valued calculated quantity. Use the vector PDF when including the figure in a paper.
+Every panel contains the mean calculated quantities for Goals 1–4, together with horizontal reference lines for the configured `alpha` and `beta`. Values are **not clipped at one**, the panels share the same vertical scale, and the vertical axis is a nonnegative real-valued calculated quantity. Use the vector PDF when including the figure in a paper.
 
 Run all main experiments sequentially with:
 

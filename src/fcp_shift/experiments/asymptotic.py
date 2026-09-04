@@ -35,7 +35,12 @@ def run_asymptotic(config: dict[str, Any], force: bool = False) -> None:
         if run.complete and not force:
             summary_path = run.path / "summary.csv"
             if summary_path.exists():
-                plot_asymptotic(pd.read_csv(summary_path), run.path)
+                plot_asymptotic(
+                    pd.read_csv(summary_path),
+                    run.path,
+                    alpha=alpha_value,
+                    beta=beta_value,
+                )
                 LOGGER.info("Refreshed asymptotic figure from %s", summary_path)
             LOGGER.info("Skipping completed calculations in %s", run.path)
             continue
@@ -136,6 +141,11 @@ def run_asymptotic(config: dict[str, Any], force: bool = False) -> None:
                 ),
             }
         )
-        plot_asymptotic(summary, run.path)
+        plot_asymptotic(
+            summary,
+            run.path,
+            alpha=alpha_value,
+            beta=beta_value,
+        )
         run.mark_complete()
         LOGGER.info("Completed %s", run.path)
