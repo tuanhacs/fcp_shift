@@ -211,7 +211,7 @@ def make_covariate_transport_figure(
         2 * dataset_count,
         # A 2x4 figure needs more than a nominal 7-inch canvas; it can be
         # scaled to \textwidth in LaTeX without losing quality because PDF is vector.
-        figsize=(6.0 * dataset_count, 4.8),
+        figsize=(6.8 * dataset_count, 4.8),
         squeeze=False,
     )
     for column, name in enumerate(selected):

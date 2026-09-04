@@ -129,7 +129,7 @@ def plot_asymptotic(
     figure, axes = plt.subplots(
         1,
         3,
-        figsize=(9.6, 3.8),
+        figsize=(11.2, 3.8),
         sharey=True,
         squeeze=False,
     )
@@ -197,23 +197,27 @@ def plot_asymptotic(
         ordered_labels.append(rf"$\alpha={alpha:g}$")
     if beta is not None:
         ordered_labels.append(rf"$\beta={beta:g}$")
-    figure.legend(
+    axes[0].legend(
         [legend_items[label] for label in ordered_labels],
         ordered_labels,
-        loc="upper center",
-        ncol=6,
-        frameon=False,
-        fontsize=10.0,
-        bbox_to_anchor=(0.5, 0.995),
-        handlelength=2.4,
-        columnspacing=1.5,
-        handletextpad=0.5,
+        loc="upper left",
+        ncol=2,
+        frameon=True,
+        framealpha=0.88,
+        facecolor="white",
+        edgecolor="#C8C8C8",
+        fontsize=8.0,
+        borderpad=0.35,
+        labelspacing=0.25,
+        handlelength=2.1,
+        columnspacing=0.9,
+        handletextpad=0.4,
     )
     figure.subplots_adjust(
         left=0.085,
         right=0.99,
         bottom=0.18,
-        top=0.79,
+        top=0.88,
         wspace=0.18,
     )
 
