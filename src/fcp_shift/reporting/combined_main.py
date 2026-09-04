@@ -93,7 +93,7 @@ def _plot_forward(
     if legend:
         axis.legend(
             fontsize=10.0,
-            loc="upper left",
+            loc="lower right",
             frameon=True,
             framealpha=0.9,
             borderpad=0.25,
@@ -128,7 +128,7 @@ def _plot_inverse(
     _format_axis(axis, forward=False)
     if legend:
         axis.legend(
-            fontsize=8.0,
+            fontsize=10.0,
             loc="upper left",
             frameon=True,
             framealpha=0.9,
