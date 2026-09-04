@@ -92,7 +92,7 @@ def _plot_forward(
     _format_axis(axis, forward=True, y_tick_max=1.0)
     if legend:
         axis.legend(
-            fontsize=8.0,
+            fontsize=10.0,
             loc="upper left",
             frameon=True,
             framealpha=0.9,
