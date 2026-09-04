@@ -10,6 +10,8 @@ from sklearn.ensemble import (
 )
 from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.neural_network import MLPClassifier, MLPRegressor
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 
 
 def fit_model(task: str, x_train, y_train, config: dict[str, Any], seed: int):
@@ -28,11 +30,15 @@ def fit_model(task: str, x_train, y_train, config: dict[str, Any], seed: int):
         if task == "regression":
             model = Ridge(alpha=float(config.get("alpha", 1.0)))
         else:
-            model = LogisticRegression(
-                C=float(config.get("C", 1.0)),
-                max_iter=int(config.get("max_iter", 500)),
-                n_jobs=int(config.get("n_jobs", -1)),
-                random_state=seed,
+            model = make_pipeline(
+                StandardScaler(),
+                LogisticRegression(
+                    C=float(config.get("C", 1.0)),
+                    max_iter=int(config.get("max_iter", 2000)),
+                    tol=float(config.get("tol", 1e-4)),
+                    n_jobs=int(config.get("n_jobs", -1)),
+                    random_state=seed,
+                ),
             )
         return model.fit(x_train, y_train)
     if name == "mlp":

@@ -31,7 +31,8 @@ models:
       name: logistic,
       seed: 2026,
       C: 1.0,
-      max_iter: 500,
+      max_iter: 2000,
+      tol: 1.0e-4,
       n_jobs: -1,
       classification_score: log_margin,
     }
