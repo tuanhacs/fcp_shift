@@ -11,6 +11,7 @@ import numpy as np
 from matplotlib.ticker import FixedLocator, FormatStrFormatter
 
 from .grouped import load_weight_runs
+from .style import figure_size, font_size
 
 
 _PAPER_FONT_SIZE = 10.0
@@ -63,7 +64,12 @@ def _format_axis(axis, *, forward: bool, y_tick_max: float = 1.0) -> None:
     axis.yaxis.set_major_locator(FixedLocator((0.0, y_tick_max / 2.0, y_tick_max)))
     axis.xaxis.set_major_formatter(FormatStrFormatter("%.1f"))
     axis.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
-    axis.tick_params(axis="both", which="major", labelsize=_PAPER_FONT_SIZE, length=3)
+    axis.tick_params(
+        axis="both",
+        which="major",
+        labelsize=font_size("tick", _PAPER_FONT_SIZE),
+        length=3,
+    )
     axis.grid(True, which="major", color="#A8A8A8", alpha=0.48, linewidth=0.75)
     axis.set_axisbelow(True)
     for spine in axis.spines.values():
@@ -85,14 +91,18 @@ def _plot_forward(
     _mean_line(
         axis, alpha, arrays["goal2_bound"], "#D55E00", _UNIFORM_ALPHA_LABEL
     )
-    axis.set_title(title, fontsize=_PAPER_TITLE_SIZE, pad=3)
-    axis.set_xlabel(r"Miscoverage $\alpha$", fontsize=_PAPER_FONT_SIZE, labelpad=2)
+    axis.set_title(title, fontsize=font_size("title", _PAPER_TITLE_SIZE), pad=3)
+    axis.set_xlabel(
+        r"Miscoverage $\alpha$", fontsize=font_size("label", _PAPER_FONT_SIZE), labelpad=2
+    )
     if show_ylabel:
-        axis.set_ylabel("FCP / bound", fontsize=_PAPER_FONT_SIZE, labelpad=2)
+        axis.set_ylabel(
+            "FCP / bound", fontsize=font_size("label", _PAPER_FONT_SIZE), labelpad=2
+        )
     _format_axis(axis, forward=True, y_tick_max=1.0)
     if legend:
         axis.legend(
-            fontsize=10.0,
+            fontsize=font_size("legend", 10.0),
             loc="lower right",
             frameon=True,
             framealpha=0.9,
@@ -121,14 +131,18 @@ def _plot_inverse(
     )
     _mean_line(axis, beta, arrays["goal3_fcp"], "#009E73", _FIXED_BETA_LABEL)
     _mean_line(axis, beta, arrays["goal4_fcp"], "#CC79A7", _UNIFORM_BETA_LABEL)
-    axis.set_title(title, fontsize=_PAPER_TITLE_SIZE, pad=3)
-    axis.set_xlabel(r"Target FCP $\beta$", fontsize=_PAPER_FONT_SIZE, labelpad=2)
+    axis.set_title(title, fontsize=font_size("title", _PAPER_TITLE_SIZE), pad=3)
+    axis.set_xlabel(
+        r"Target FCP $\beta$", fontsize=font_size("label", _PAPER_FONT_SIZE), labelpad=2
+    )
     if show_ylabel:
-        axis.set_ylabel("Empirical FCP", fontsize=_PAPER_FONT_SIZE, labelpad=2)
+        axis.set_ylabel(
+            "Empirical FCP", fontsize=font_size("label", _PAPER_FONT_SIZE), labelpad=2
+        )
     _format_axis(axis, forward=False)
     if legend:
         axis.legend(
-            fontsize=10.0,
+            fontsize=font_size("legend", 10.0),
             loc="upper left",
             frameon=True,
             framealpha=0.9,
@@ -211,7 +225,7 @@ def make_covariate_transport_figure(
         2 * dataset_count,
         # A 2x4 figure needs more than a nominal 7-inch canvas; it can be
         # scaled to \textwidth in LaTeX without losing quality because PDF is vector.
-        figsize=(6.8 * dataset_count, 4.8),
+        figsize=figure_size((6.8 * dataset_count, 4.8)),
         squeeze=False,
     )
     for column, name in enumerate(selected):
@@ -253,7 +267,7 @@ def make_covariate_transport_figure(
         rotation=90,
         ha="center",
         va="center",
-        fontsize=_PAPER_TITLE_SIZE,
+        fontsize=font_size("title", _PAPER_TITLE_SIZE),
         fontweight="bold",
     )
     axes[1, 0].annotate(
@@ -263,7 +277,7 @@ def make_covariate_transport_figure(
         rotation=90,
         ha="center",
         va="center",
-        fontsize=_PAPER_TITLE_SIZE,
+        fontsize=font_size("title", _PAPER_TITLE_SIZE),
         fontweight="bold",
     )
     figure.subplots_adjust(

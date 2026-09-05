@@ -13,6 +13,7 @@ import pandas as pd
 from fcp_shift.ablations.common import prepare_scored_problem, scoped_ablation_path
 from fcp_shift.experiments.common import calculate_goals, grid
 from fcp_shift.reporting import RunDirectory
+from fcp_shift.reporting.style import figure_size, font_size
 from fcp_shift.reproducibility import stable_seed
 from fcp_shift.shifts import sample_covariate_shift
 from fcp_shift.weights import fit_weight
@@ -25,13 +26,13 @@ def _plot(frame: pd.DataFrame, dataset: str, path: Path) -> None:
         goal3_pass=("goal3_pass", "mean"), goal4_pass=("goal4_pass", "mean"),
         bound=("weight_bound", "mean"), ess=("ess", "mean"),
     ).reset_index()
-    figure, axes = plt.subplots(1, 2, figsize=(12, 4.5))
+    figure, axes = plt.subplots(1, 2, figsize=figure_size((12, 4.5)))
     for goal, color in zip(range(1, 5), ["#0072B2", "#D55E00", "#009E73", "#CC79A7"]):
         axes[0].plot(summary.gamma, summary[f"goal{goal}_pass"], marker="o", color=color, label=f"Goal {goal}")
     axes[0].axhline(0.9, color="black", linestyle="--", label="Nominal 1-delta")
     axes[0].set(xlabel=r"Misspecification $\gamma$", ylabel="Empirical pass rate", title=f"{dataset}: validity")
     axes[0].grid(alpha=0.25)
-    axes[0].legend(fontsize=8)
+    axes[0].legend(fontsize=font_size("legend", 8))
     axes[1].plot(summary.gamma, summary.bound, marker="o", color="#0072B2", label="Weight bound B")
     second = axes[1].twinx()
     second.plot(summary.gamma, summary.ess, marker="s", color="#D55E00", label="ESS")
@@ -40,7 +41,11 @@ def _plot(frame: pd.DataFrame, dataset: str, path: Path) -> None:
     axes[1].grid(alpha=0.25)
     handles1, labels1 = axes[1].get_legend_handles_labels()
     handles2, labels2 = second.get_legend_handles_labels()
-    axes[1].legend(handles1 + handles2, labels1 + labels2, fontsize=8)
+    axes[1].legend(
+        handles1 + handles2,
+        labels1 + labels2,
+        fontsize=font_size("legend", 8),
+    )
     figure.tight_layout()
     figure.savefig(path, bbox_inches="tight")
     plt.close(figure)

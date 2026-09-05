@@ -7,6 +7,46 @@ from fcp_shift.config import filter_config, load_config
 from fcp_shift.ablations import RUNNERS as ABLATION_RUNNERS
 from fcp_shift.experiments import run_asymptotic, run_covariate_shift, run_transport_shift
 from fcp_shift.reporting import make_covariate_transport_figure, make_grouped_figures
+from fcp_shift.reporting.style import PlotStyle, configure_plot_style
+
+
+def _positive_float(value: str) -> float:
+    parsed = float(value)
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("must be greater than zero")
+    return parsed
+
+
+def _add_plot_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--figsize",
+        nargs=2,
+        type=_positive_float,
+        metavar=("WIDTH", "HEIGHT"),
+        help="Figure size in inches; overrides the report-specific default",
+    )
+    parser.add_argument(
+        "--font-size",
+        "--fontsize",
+        dest="font_size",
+        type=_positive_float,
+        help="Base font size in points",
+    )
+    parser.add_argument("--title-font-size", type=_positive_float)
+    parser.add_argument("--label-font-size", type=_positive_float)
+    parser.add_argument("--tick-font-size", type=_positive_float)
+    parser.add_argument("--legend-font-size", type=_positive_float)
+
+
+def _plot_style_from_args(args: argparse.Namespace) -> PlotStyle:
+    return PlotStyle(
+        figsize=tuple(args.figsize) if args.figsize else None,
+        font_size=args.font_size,
+        title_font_size=args.title_font_size,
+        label_font_size=args.label_font_size,
+        tick_font_size=args.tick_font_size,
+        legend_font_size=args.legend_font_size,
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -20,11 +60,13 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--seed", type=int)
     run.add_argument("--force", action="store_true")
     run.add_argument("--log-level", default="INFO")
+    _add_plot_arguments(run)
     figures = subparsers.add_parser(
         "figures", help="Aggregate completed weights into shared main figures"
     )
     figures.add_argument("--config", required=True)
     figures.add_argument("--log-level", default="INFO")
+    _add_plot_arguments(figures)
     combined = subparsers.add_parser(
         "main-figure",
         help="Create a combined Covariate/Transport 2 x (2D) figure",
@@ -40,6 +82,7 @@ def build_parser() -> argparse.ArgumentParser:
     combined.add_argument("--datasets", nargs="+")
     combined.add_argument("--output")
     combined.add_argument("--log-level", default="INFO")
+    _add_plot_arguments(combined)
     return parser
 
 
@@ -49,6 +92,7 @@ def main(argv: list[str] | None = None) -> None:
         level=getattr(logging, args.log_level.upper()),
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     )
+    configure_plot_style(_plot_style_from_args(args))
     if args.command == "main-figure":
         covariate_config = load_config(args.covariate_config)
         transport_config = load_config(args.transport_config)

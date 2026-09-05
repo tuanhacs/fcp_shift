@@ -18,6 +18,7 @@ from fcp_shift.data import prepare_dataset
 from fcp_shift.experiments.common import calculate_goals, grid
 from fcp_shift.models import conformity_scores, fit_model
 from fcp_shift.reporting import RunDirectory
+from fcp_shift.reporting.style import figure_size, font_size
 from fcp_shift.reproducibility import stable_seed
 from fcp_shift.shifts import sample_covariate_shift
 from fcp_shift.weights import fit_weight
@@ -51,7 +52,7 @@ def _plot(summary: pd.DataFrame, weights: list[str], models: list[str], output: 
     for weight in weights:
         subset_weight = summary[summary.weight == weight]
         for goal in (1, 2):
-            figure, axis = plt.subplots(figsize=(8, 5))
+            figure, axis = plt.subplots(figsize=figure_size((8, 5)))
             bound = subset_weight[
                 (subset_weight.model == models[0]) & (subset_weight.curve == f"goal{goal}_bound")
             ]
@@ -64,12 +65,12 @@ def _plot(summary: pd.DataFrame, weights: list[str], models: list[str], output: 
                 axis.fill_between(curve.x, curve.q10, curve.q90, color=colors[model], alpha=0.10)
             axis.set(xlabel=r"Miscoverage $\alpha$", ylabel="FCP / bound", title=f"{weight} — Goal {goal}")
             axis.grid(alpha=0.25)
-            axis.legend(fontsize=8)
+            axis.legend(fontsize=font_size("legend", 8))
             figure.tight_layout()
             figure.savefig(output / f"models_{weight}_forward_goal_{goal}.pdf", bbox_inches="tight")
             plt.close(figure)
         for goal in (3, 4):
-            figure, axis = plt.subplots(figsize=(8, 5))
+            figure, axis = plt.subplots(figsize=figure_size((8, 5)))
             axis.plot([0, 1], [0, 1], color="black", linestyle="--", linewidth=2, label=r"Target $\beta$")
             for model in models:
                 curve = subset_weight[
@@ -79,7 +80,7 @@ def _plot(summary: pd.DataFrame, weights: list[str], models: list[str], output: 
                 axis.fill_between(curve.x, curve.q10, curve.q90, color=colors[model], alpha=0.10)
             axis.set(xlabel=r"Target FCP $\beta$", ylabel="Empirical FCP", title=f"{weight} — Goal {goal}")
             axis.grid(alpha=0.25)
-            axis.legend(fontsize=8)
+            axis.legend(fontsize=font_size("legend", 8))
             figure.tight_layout()
             figure.savefig(output / f"models_{weight}_inverse_goal_{goal}.pdf", bbox_inches="tight")
             plt.close(figure)

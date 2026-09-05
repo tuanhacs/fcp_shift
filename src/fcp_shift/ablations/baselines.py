@@ -23,6 +23,7 @@ from fcp_shift.conformal.baselines import (
 from fcp_shift.conformal.weighted_cp import fcp_at_levels, fcp_curve
 from fcp_shift.experiments.common import grid
 from fcp_shift.reporting import RunDirectory
+from fcp_shift.reporting.style import figure_size, font_size
 from fcp_shift.reproducibility import stable_seed
 from fcp_shift.shifts import sample_covariate_shift
 from fcp_shift.weights import fit_weight
@@ -40,7 +41,7 @@ def _plot_dataset(
     output: Path,
 ) -> None:
     colors = {"exponential": "#0072B2", "quadratic": "#D55E00", "mahalanobis": "#009E73"}
-    figure, axis = plt.subplots(figsize=(8, 5))
+    figure, axis = plt.subplots(figsize=figure_size((8, 5)))
     for index, (weight, curves) in enumerate(weight_curves.items()):
         color = colors.get(weight, plt.get_cmap("tab10")(index))
         axis.plot(alpha, curves["forward"].mean(axis=0), color=color, linestyle="--", label=f"Empirical FCP — {weight}")
@@ -48,12 +49,12 @@ def _plot_dataset(
     axis.plot(alpha, cojer_bound, color="#E31A1C", linewidth=2.3, label="CoJER bound")
     axis.set(xlabel=r"Miscoverage $\alpha$", ylabel="Ordinary empirical FCP / bound", title=f"{dataset}: baselines under shift")
     axis.grid(alpha=0.25)
-    axis.legend(fontsize=8)
+    axis.legend(fontsize=font_size("legend", 8))
     figure.tight_layout()
     figure.savefig(output / f"baselines_forward_{dataset}.pdf", bbox_inches="tight")
     plt.close(figure)
 
-    figure, axis = plt.subplots(figsize=(8, 5))
+    figure, axis = plt.subplots(figsize=figure_size((8, 5)))
     axis.plot(beta, beta, color="black", linestyle="--", linewidth=2, label=r"Target $\beta$")
     for index, (weight, curves) in enumerate(weight_curves.items()):
         color = colors.get(weight, plt.get_cmap("tab10")(index))
@@ -61,7 +62,7 @@ def _plot_dataset(
         axis.plot(beta, curves["cojer_inverse"].mean(axis=0), color=color, linestyle=":", linewidth=2.2, label=f"CoJER — {weight}")
     axis.set(xlabel=r"Target FCP $\beta$", ylabel="Ordinary empirical FCP", title=f"{dataset}: inverse baselines under shift")
     axis.grid(alpha=0.25)
-    axis.legend(fontsize=8, ncol=2)
+    axis.legend(fontsize=font_size("legend", 8), ncol=2)
     figure.tight_layout()
     figure.savefig(output / f"baselines_inverse_{dataset}.pdf", bbox_inches="tight")
     plt.close(figure)

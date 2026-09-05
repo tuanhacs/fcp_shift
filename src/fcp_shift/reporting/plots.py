@@ -10,6 +10,8 @@ import numpy as np
 import pandas as pd
 from matplotlib.ticker import FixedLocator, FuncFormatter, FormatStrFormatter
 
+from .style import figure_size, font_size
+
 
 COLORS = {
     "goal1": "#0072B2",
@@ -38,7 +40,7 @@ def plot_goal_results(
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    figure, axis = plt.subplots(figsize=(8, 4.8))
+    figure, axis = plt.subplots(figsize=figure_size((8, 4.8)))
     _mean_band(axis, alpha, arrays["empirical_fcp"], "Empirical FCP", COLORS["empirical"])
     _mean_band(axis, alpha, arrays["goal1_bound"], "Goal 1", COLORS["goal1"])
     _mean_band(axis, alpha, arrays["goal2_bound"], "Goal 2", COLORS["goal2"])
@@ -49,7 +51,7 @@ def plot_goal_results(
     figure.savefig(output_dir / "forward_goals_1_2.pdf", bbox_inches="tight")
     plt.close(figure)
 
-    figure, axis = plt.subplots(figsize=(8, 4.8))
+    figure, axis = plt.subplots(figsize=figure_size((8, 4.8)))
     axis.plot(beta, beta, color=COLORS["empirical"], linestyle="--", label=r"Target $\beta$")
     _mean_band(axis, beta, arrays["goal3_fcp"], "Goal 3", COLORS["goal3"])
     _mean_band(axis, beta, arrays["goal4_fcp"], "Goal 4", COLORS["goal4"])
@@ -60,7 +62,7 @@ def plot_goal_results(
     figure.savefig(output_dir / "inverse_goals_3_4.pdf", bbox_inches="tight")
     plt.close(figure)
 
-    figure, axis = plt.subplots(figsize=(8, 4.8))
+    figure, axis = plt.subplots(figsize=figure_size((8, 4.8)))
     _mean_band(axis, beta, arrays["goal3_alpha"], "Goal 3", COLORS["goal3"])
     _mean_band(axis, beta, arrays["goal4_alpha"], "Goal 4", COLORS["goal4"])
     axis.set(
@@ -129,7 +131,7 @@ def plot_asymptotic(
     figure, axes = plt.subplots(
         1,
         3,
-        figsize=(14, 4.5),
+        figsize=figure_size((16, 4.5)),
         sharey=True,
         squeeze=False,
     )
@@ -172,8 +174,8 @@ def plot_asymptotic(
                 zorder=2,
             )
         axis.set_xscale("log")
-        axis.set_title(title, fontsize=11.5, pad=5)
-        axis.set_xlabel(xlabel, fontsize=10.5, labelpad=4)
+        axis.set_title(title, fontsize=font_size("title", 11.5), pad=5)
+        axis.set_xlabel(xlabel, fontsize=font_size("label", 10.5), labelpad=4)
         axis.set_ylim(0.0, y_tick_max * 1.02)
         axis.xaxis.set_major_locator(
             FixedLocator(_three_observed_ticks(subset[x_column].to_numpy()))
@@ -182,12 +184,14 @@ def plot_asymptotic(
         axis.xaxis.set_minor_locator(FixedLocator([]))
         axis.yaxis.set_major_locator(FixedLocator(y_ticks))
         axis.yaxis.set_major_formatter(FormatStrFormatter("%.2g"))
-        axis.tick_params(axis="both", which="major", labelsize=10.0, length=4)
+        axis.tick_params(
+            axis="both", which="major", labelsize=font_size("tick", 10.0), length=4
+        )
         axis.grid(alpha=0.20, linewidth=0.65)
         for spine in axis.spines.values():
             spine.set_linewidth(0.8)
     axes[0].set_ylabel(
-        r"Calculated quantity", fontsize=10.5, labelpad=4
+        r"Calculated quantity", fontsize=font_size("label", 10.5), labelpad=4
     )
 
     handles, labels = axes[0].get_legend_handles_labels()
@@ -206,7 +210,7 @@ def plot_asymptotic(
         framealpha=0.88,
         facecolor="white",
         edgecolor="#C8C8C8",
-        fontsize=10.0,
+        fontsize=font_size("legend", 10.0),
         borderpad=0.35,
         labelspacing=0.25,
         handlelength=2.1,

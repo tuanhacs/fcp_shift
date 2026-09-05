@@ -23,6 +23,7 @@ from fcp_shift.data import prepare_dataset
 from fcp_shift.experiments.common import grid
 from fcp_shift.models import conformity_scores, fit_model
 from fcp_shift.reporting import RunDirectory
+from fcp_shift.reporting.style import figure_size, font_size
 from fcp_shift.reproducibility import stable_seed
 from fcp_shift.weights import fit_weight
 
@@ -30,7 +31,12 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _plot(frame: pd.DataFrame, datasets: list[str], models: list[str], path: Path) -> None:
-    figure, axes = plt.subplots(len(datasets), len(models), figsize=(5 * len(models), 4 * len(datasets)), squeeze=False)
+    figure, axes = plt.subplots(
+        len(datasets),
+        len(models),
+        figsize=figure_size((5 * len(models), 4 * len(datasets))),
+        squeeze=False,
+    )
     for row, dataset in enumerate(datasets):
         for column, model in enumerate(models):
             axis = axes[row, column]
@@ -48,7 +54,7 @@ def _plot(frame: pd.DataFrame, datasets: list[str], models: list[str], path: Pat
             axis.set_ylabel("Wall time (seconds)")
             axis.grid(alpha=0.25)
             if row == 0 and column == len(models) - 1:
-                axis.legend(fontsize=8)
+                axis.legend(fontsize=font_size("legend", 8))
     figure.tight_layout()
     figure.savefig(path, bbox_inches="tight")
     plt.close(figure)

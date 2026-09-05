@@ -14,6 +14,7 @@ import pandas as pd
 from fcp_shift.ablations.common import prepare_scored_problem, scoped_ablation_path
 from fcp_shift.conformal import CalibrationStructure, estimate_g_algorithm1
 from fcp_shift.reporting import RunDirectory
+from fcp_shift.reporting.style import figure_size, font_size
 from fcp_shift.reproducibility import stable_seed
 from fcp_shift.weights import fit_weight
 
@@ -22,7 +23,10 @@ LOGGER = logging.getLogger(__name__)
 
 def _plot(frame: pd.DataFrame, datasets: list[str], alphas: list[float], path: Path) -> None:
     figure, axes = plt.subplots(
-        len(datasets), len(alphas), figsize=(5 * len(alphas), 4 * len(datasets)), squeeze=False
+        len(datasets),
+        len(alphas),
+        figsize=figure_size((5 * len(alphas), 4 * len(datasets))),
+        squeeze=False,
     )
     colors = {"exponential": "#0072B2", "quadratic": "#D55E00", "mahalanobis": "#009E73"}
     for row, dataset in enumerate(datasets):
@@ -47,7 +51,7 @@ def _plot(frame: pd.DataFrame, datasets: list[str], alphas: list[float], path: P
             axis.set_ylabel(r"Estimated $G_{w,n}(\alpha)$")
             axis.grid(alpha=0.25)
             if row == 0 and column == len(alphas) - 1:
-                axis.legend(fontsize=8)
+                axis.legend(fontsize=font_size("legend", 8))
     figure.tight_layout()
     figure.savefig(path, bbox_inches="tight")
     plt.close(figure)

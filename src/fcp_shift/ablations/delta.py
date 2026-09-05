@@ -15,6 +15,7 @@ from fcp_shift.ablations.common import prepare_scored_problem, scoped_ablation_p
 from fcp_shift.conformal import CalibrationStructure, estimate_g_algorithm1
 from fcp_shift.conformal.bounds import fixed_constants, uniform_constants
 from fcp_shift.reporting import RunDirectory
+from fcp_shift.reporting.style import figure_size, font_size
 from fcp_shift.reproducibility import stable_seed
 from fcp_shift.weights import fit_weight
 
@@ -30,7 +31,12 @@ def _plot(
         "m_increases": r"$m\to\infty$ ($n$ fixed)",
         "n_equals_m": r"$n=m\to\infty$",
     }
-    figure, axes = plt.subplots(len(datasets), 3, figsize=(15, 4 * len(datasets)), squeeze=False)
+    figure, axes = plt.subplots(
+        len(datasets),
+        3,
+        figsize=figure_size((15, 4 * len(datasets))),
+        squeeze=False,
+    )
     palette = plt.get_cmap("tab10")
     for row, dataset in enumerate(datasets):
         for column, path_name in enumerate(paths):
@@ -67,7 +73,7 @@ def _plot(
             axis.set_ylabel(r"Estimated $G(\alpha+\Delta)+\epsilon$")
             axis.grid(alpha=0.25)
             if row == 0 and column == 2:
-                axis.legend(fontsize=8)
+                axis.legend(fontsize=font_size("legend", 8))
     figure.tight_layout()
     figure.savefig(output_path, bbox_inches="tight")
     plt.close(figure)

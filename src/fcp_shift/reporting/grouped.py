@@ -10,6 +10,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
+from .style import figure_size, font_size
+
 LOGGER = logging.getLogger(__name__)
 
 WEIGHT_COLORS = {
@@ -94,7 +96,7 @@ def plot_grouped_weights(
             raise ValueError(f"Incompatible grids for grouped weight {weight}")
 
     for goal in (1, 2):
-        figure, axis = plt.subplots(figsize=(8, 5))
+        figure, axis = plt.subplots(figsize=figure_size((8, 5)))
         for index, (weight, arrays) in enumerate(results.items()):
             color = _color(weight, index)
             _plot_mean_band(
@@ -116,7 +118,7 @@ def plot_grouped_weights(
         axis.set_xlabel(r"Miscoverage level $\alpha$")
         axis.set_ylabel("FCP / bound")
         axis.grid(alpha=0.25)
-        axis.legend(fontsize=8, ncol=2)
+        axis.legend(fontsize=font_size("legend", 8), ncol=2)
         figure.tight_layout()
         figure.savefig(
             output_directory / f"grouped_weights_forward_goal_{goal}.pdf",
@@ -125,7 +127,7 @@ def plot_grouped_weights(
         plt.close(figure)
 
     for goal in (3, 4):
-        figure, axis = plt.subplots(figsize=(8, 5))
+        figure, axis = plt.subplots(figsize=figure_size((8, 5)))
         axis.plot(beta, beta, color="#111111", linestyle="--", linewidth=2, label=r"Target $\beta$")
         for index, (weight, arrays) in enumerate(results.items()):
             _plot_mean_band(
@@ -139,7 +141,7 @@ def plot_grouped_weights(
         axis.set_xlabel(r"Target FCP $\beta$")
         axis.set_ylabel("Empirical FCP")
         axis.grid(alpha=0.25)
-        axis.legend(fontsize=9)
+        axis.legend(fontsize=font_size("legend", 9))
         figure.tight_layout()
         figure.savefig(
             output_directory / f"grouped_weights_inverse_goal_{goal}.pdf",
@@ -148,7 +150,7 @@ def plot_grouped_weights(
         plt.close(figure)
 
     for goal in (3, 4):
-        figure, axis = plt.subplots(figsize=(8, 5))
+        figure, axis = plt.subplots(figsize=figure_size((8, 5)))
         for index, (weight, arrays) in enumerate(results.items()):
             _plot_mean_band(
                 axis,
@@ -161,7 +163,7 @@ def plot_grouped_weights(
         axis.set_xlabel(r"Target FCP $\beta$")
         axis.set_ylabel(r"Selected miscoverage $\alpha$")
         axis.grid(alpha=0.25)
-        axis.legend(fontsize=9)
+        axis.legend(fontsize=font_size("legend", 9))
         figure.tight_layout()
         figure.savefig(
             output_directory / f"grouped_weights_selected_alpha_goal_{goal}.pdf",

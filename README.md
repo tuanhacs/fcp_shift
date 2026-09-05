@@ -161,6 +161,47 @@ python -m fcp_shift.cli main-figure \
 
 If `--datasets` is omitted, the command automatically includes every configured dataset for which both result directories exist. The output is saved as both PDF and PNG below `outputs/main_figures/combined/`.
 
+### Plot styling from the CLI
+
+All commands that generate plots (`run`, `figures`, and `main-figure`) accept the same presentation options:
+
+```text
+--figsize WIDTH HEIGHT
+--font-size SIZE
+--title-font-size SIZE
+--label-font-size SIZE
+--tick-font-size SIZE
+--legend-font-size SIZE
+```
+
+Sizes are given in inches for `--figsize` and points for font options. `--font-size` is the fallback for every text element; a specialized option overrides it. For example:
+
+```bash
+python -m fcp_shift.cli main-figure \
+  --covariate-config configs/main/covariate_shift.yaml \
+  --transport-config configs/main/transport_shift.yaml \
+  --weight exponential \
+  --rho 0.50 \
+  --datasets adult fashion_mnist \
+  --figsize 14 5 \
+  --font-size 10 \
+  --title-font-size 12 \
+  --legend-font-size 8
+```
+
+For an asymptotic or ablation report generated through `run`, append the same options:
+
+```bash
+python -m fcp_shift.cli run \
+  --config configs/main/asymptotic.yaml \
+  --figsize 17 4.8 \
+  --label-font-size 11 \
+  --tick-font-size 10 \
+  --legend-font-size 9
+```
+
+Completed main asymptotic runs redraw from `summary.csv`. Other completed `run` tasks retain their existing plots unless rerun with `--force`; the dedicated `figures` and `main-figure` commands always redraw from saved curves.
+
 ## Selecting a dataset, weight, shift, or seed
 
 The CLI can filter a multi-dataset YAML without editing it:
