@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.ticker import FixedLocator, FuncFormatter, FormatStrFormatter
 
+from .labels import GOAL_LABELS
 from .style import figure_size, font_size
 
 
@@ -165,7 +166,7 @@ def plot_asymptotic(
                 subset[x_column],
                 subset[f"goal{goal}_mean"],
                 color=COLORS[f"goal{goal}"],
-                label=f"Goal {goal}",
+                label=GOAL_LABELS[goal],
                 linewidth=2.1,
                 linestyle=linestyle,
                 marker=marker,
@@ -196,7 +197,7 @@ def plot_asymptotic(
 
     handles, labels = axes[0].get_legend_handles_labels()
     legend_items = dict(zip(labels, handles))
-    ordered_labels = [f"Goal {goal}" for goal in range(1, 5)]
+    ordered_labels = [GOAL_LABELS[goal] for goal in range(1, 5)]
     if alpha is not None:
         ordered_labels.append(rf"$\alpha={alpha:g}$")
     if beta is not None:

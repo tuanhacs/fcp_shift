@@ -11,6 +11,12 @@ import numpy as np
 from matplotlib.ticker import FixedLocator, FormatStrFormatter
 
 from .grouped import load_weight_runs
+from .labels import (
+    FIXED_ALPHA_LABEL,
+    FIXED_BETA_LABEL,
+    UNIFORM_ALPHA_LABEL,
+    UNIFORM_BETA_LABEL,
+)
 from .style import figure_size, font_size
 
 
@@ -18,20 +24,6 @@ _PAPER_FONT_SIZE = 10.0
 _PAPER_TITLE_SIZE = 11.0
 _PAPER_LINE_WIDTH = 2.1
 _AXIS_TICKS = (0.0, 0.5, 1.0)
-_FIXED_ALPHA_LABEL = (
-    r"$\widehat{\mathrm{FCP}}_{\mathrm{fix}}^{w,\delta,\alpha}$"
-)
-_UNIFORM_ALPHA_LABEL = (
-    r"$\widehat{\mathrm{FCP}}_{\mathrm{unif}}^{w,\delta,\alpha}$"
-)
-_FIXED_BETA_LABEL = (
-    r"$\widehat{\mathrm{FCP}}_{\mathrm{fix}}^{w,\delta,\beta}$"
-)
-_UNIFORM_BETA_LABEL = (
-    r"$\widehat{\mathrm{FCP}}_{\mathrm{unif}}^{w,\delta,\beta}$"
-)
-
-
 def _mean_line(axis, x, values, color, label, linestyle="-") -> None:
     values = np.asarray(values, dtype=float)
     mean = values.mean(axis=0)
@@ -86,10 +78,10 @@ def _plot_forward(
     alpha = arrays["alpha"]
     _mean_line(axis, alpha, arrays["empirical_fcp"], "#111111", "Empirical FCP")
     _mean_line(
-        axis, alpha, arrays["goal1_bound"], "#0072B2", _FIXED_ALPHA_LABEL
+        axis, alpha, arrays["goal1_bound"], "#0072B2", FIXED_ALPHA_LABEL
     )
     _mean_line(
-        axis, alpha, arrays["goal2_bound"], "#D55E00", _UNIFORM_ALPHA_LABEL
+        axis, alpha, arrays["goal2_bound"], "#D55E00", UNIFORM_ALPHA_LABEL
     )
     axis.set_title(title, fontsize=font_size("title", _PAPER_TITLE_SIZE), pad=3)
     axis.set_xlabel(
@@ -129,8 +121,8 @@ def _plot_inverse(
         linestyle="--",
         label=r"Target $\beta$",
     )
-    _mean_line(axis, beta, arrays["goal3_fcp"], "#009E73", _FIXED_BETA_LABEL)
-    _mean_line(axis, beta, arrays["goal4_fcp"], "#CC79A7", _UNIFORM_BETA_LABEL)
+    _mean_line(axis, beta, arrays["goal3_fcp"], "#009E73", FIXED_BETA_LABEL)
+    _mean_line(axis, beta, arrays["goal4_fcp"], "#CC79A7", UNIFORM_BETA_LABEL)
     axis.set_title(title, fontsize=font_size("title", _PAPER_TITLE_SIZE), pad=3)
     axis.set_xlabel(
         r"Target FCP $\beta$", fontsize=font_size("label", _PAPER_FONT_SIZE), labelpad=2
