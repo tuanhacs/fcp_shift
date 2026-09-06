@@ -74,6 +74,7 @@ def _plot_forward(
     title: str,
     legend: bool,
     show_ylabel: bool,
+    show_xlabel: bool,
 ) -> None:
     alpha = arrays["alpha"]
     _mean_line(axis, alpha, arrays["empirical_fcp"], "#111111", "Empirical FCP")
@@ -84,9 +85,12 @@ def _plot_forward(
         axis, alpha, arrays["goal2_bound"], "#D55E00", UNIFORM_ALPHA_LABEL
     )
     axis.set_title(title, fontsize=font_size("title", _PAPER_TITLE_SIZE), pad=3)
-    axis.set_xlabel(
-        r"Miscoverage $\alpha$", fontsize=font_size("label", _PAPER_FONT_SIZE), labelpad=2
-    )
+    if show_xlabel:
+        axis.set_xlabel(
+            r"Miscoverage $\alpha$",
+            fontsize=font_size("label", _PAPER_FONT_SIZE),
+            labelpad=2,
+        )
     if show_ylabel:
         axis.set_ylabel(
             "FCP / bound", fontsize=font_size("label", _PAPER_FONT_SIZE), labelpad=2
@@ -111,6 +115,7 @@ def _plot_inverse(
     title: str,
     legend: bool,
     show_ylabel: bool,
+    show_xlabel: bool,
 ) -> None:
     beta = arrays["beta"]
     axis.plot(
@@ -124,9 +129,12 @@ def _plot_inverse(
     _mean_line(axis, beta, arrays["goal3_fcp"], "#009E73", FIXED_BETA_LABEL)
     _mean_line(axis, beta, arrays["goal4_fcp"], "#CC79A7", UNIFORM_BETA_LABEL)
     axis.set_title(title, fontsize=font_size("title", _PAPER_TITLE_SIZE), pad=3)
-    axis.set_xlabel(
-        r"Target FCP $\beta$", fontsize=font_size("label", _PAPER_FONT_SIZE), labelpad=2
-    )
+    if show_xlabel:
+        axis.set_xlabel(
+            r"Target FCP $\beta$",
+            fontsize=font_size("label", _PAPER_FONT_SIZE),
+            labelpad=2,
+        )
     if show_ylabel:
         axis.set_ylabel(
             "Empirical FCP", fontsize=font_size("label", _PAPER_FONT_SIZE), labelpad=2
@@ -228,12 +236,14 @@ def make_covariate_transport_figure(
             title,
             column == 0,
             column == 0,
+            False,
         )
         _plot_forward(
             axes[1, column],
             curves[("transport", name)],
             "",
             False,
+            column == 0,
             column == 0,
         )
         inverse_column = dataset_count + column
@@ -243,12 +253,14 @@ def make_covariate_transport_figure(
             title,
             column == 0,
             column == 0,
+            False,
         )
         _plot_inverse(
             axes[1, inverse_column],
             curves[("transport", name)],
             "",
             False,
+            column == 0,
             column == 0,
         )
 
