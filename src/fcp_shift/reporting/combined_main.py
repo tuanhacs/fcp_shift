@@ -8,7 +8,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.ticker import FixedLocator, FormatStrFormatter
+from matplotlib.ticker import FixedLocator, FormatStrFormatter, FuncFormatter
 
 from .grouped import load_weight_runs
 from .labels import (
@@ -55,7 +55,9 @@ def _format_axis(axis, *, forward: bool, y_tick_max: float = 1.0) -> None:
     axis.xaxis.set_major_locator(FixedLocator(_AXIS_TICKS))
     axis.yaxis.set_major_locator(FixedLocator((0.0, y_tick_max / 2.0, y_tick_max)))
     axis.xaxis.set_major_formatter(FormatStrFormatter("%.1f"))
-    axis.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
+    axis.yaxis.set_major_formatter(
+        FuncFormatter(lambda value, _position: "" if np.isclose(value, 0.0) else f"{value:.1f}")
+    )
     axis.tick_params(
         axis="both",
         which="major",
