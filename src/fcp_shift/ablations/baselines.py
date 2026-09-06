@@ -40,7 +40,13 @@ def _plot_dataset(
     cojer_bound: np.ndarray,
     output: Path,
 ) -> None:
-    colors = {"exponential": "#0072B2", "quadratic": "#D55E00", "mahalanobis": "#009E73"}
+    colors = {
+        "exponential": "#0072B2",
+        "quadratic": "#D55E00",
+        "mahalanobis": "#009E73",
+        "linear": "#CC79A7",
+        "sigmoid": "#7B61A8",
+    }
     figure, axis = plt.subplots(figsize=figure_size((8, 5)))
     for index, (weight, curves) in enumerate(weight_curves.items()):
         color = colors.get(weight, plt.get_cmap("tab10")(index))

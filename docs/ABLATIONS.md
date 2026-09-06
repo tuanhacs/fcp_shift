@@ -128,17 +128,33 @@ The output is a `3 x 3` dataset-by-model figure. Each subplot contains two timin
 
 Model fitting, dataset loading, and weight fitting are excluded. Each coordinate receives one untimed warm-up followed by repeated measurements. The plot reports medians and 10–90% bands on log-log axes.
 
-## 5. Weight misspecification ablation
+## 5. Weight-family ablation
 
 Configuration: `configs/ablation/weights.yaml`
 
-This workflow deliberately avoids comparing different target distributions. The target sample is always generated from one exponential oracle weight `w0`. The weight used by conformal prediction is
-
-```text
-w_gamma = (1 - gamma) * w0 + gamma * 1.
+```bash
+python -m fcp_shift.cli run --config configs/ablation/weights.yaml
 ```
 
-Thus `gamma=0` is the oracle and `gamma=1` is unweighted conformal prediction, while the test distribution stays fixed. Plots report Goal 1–4 pass behavior, the empirical weight bound, and effective sample size. The result measures misspecification rather than declaring one unrelated shift-generating weight family superior to another.
+The workflow compares five weight families in both Covariate Shift and Score-Transport Shift (STS):
+
+- exponential;
+- quadratic;
+- Mahalanobis;
+- positive linear (new);
+- sigmoid (new).
+
+For each setting it produces one forward figure for the fixed/uniform alpha guarantees and one inverse figure for the fixed/uniform beta guarantees. Each panel contains the usual black nominal line and one mean curve with a standard-deviation band for every weight. This gives exactly four figures:
+
+```text
+outputs/ablations/weight_families/seed_<seed>/
+weights_covariate_forward_goals_1_2.pdf
+weights_covariate_inverse_goals_3_4.pdf
+weights_transport_forward_goals_1_2.pdf
+weights_transport_inverse_goals_3_4.pdf
+```
+
+Each family defines its corresponding shifted target distribution; this fact is explicitly recorded in `metadata.json`. The STS experiment uses the configured `rho` and estimates the required transport map with Algorithm 1.
 
 ## 6. DKW and CoJER baseline comparison
 
@@ -173,7 +189,7 @@ baseline_comparison_table.csv
 baseline_curves_summary.csv
 ```
 
-The table reports forward and inverse pass rates and mean maximum violations for every dataset-weight pair. DKW/CoJER Monte Carlo calibration sizes are controlled in YAML. Increase them for final paper runs and keep the random seed fixed.
+The full configuration covers six paper datasets and five weight families. The table reports forward and inverse pass rates and mean maximum violations for every dataset-weight pair. DKW/CoJER Monte Carlo calibration sizes are controlled in YAML. Increase them for final paper runs and keep the random seed fixed.
 
 ## Output and reproducibility
 

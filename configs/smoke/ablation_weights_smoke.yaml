@@ -4,7 +4,11 @@ datasets:
 model: {name: hist_gradient_boosting, seed: 3, max_iter: 15, max_leaf_nodes: 7, early_stopping: false}
 weights:
   - {name: exponential, strength: 0.3, clip_quantile: 0.95}
-ablation: {gammas: [0.0, 0.5, 1.0]}
+  - {name: quadratic, strength: 0.5, clip_quantile: 0.95}
+  - {name: mahalanobis, strength: 0.5, clip_quantile: 0.95}
+  - {name: linear, strength: 0.2, clip_quantile: 0.95}
+  - {name: sigmoid, strength: 0.5, clip_quantile: 0.95}
+transport: {strata: 3, rho: 0.5}
 sample_sizes: {n_calibration: 80, m_test: 50}
 fcp:
   delta: 0.1
@@ -14,4 +18,3 @@ fcp:
   alpha_grid: {start: 0.0, stop: 1.0, points: 11}
   beta_grid: {start: 0.0, stop: 1.0, points: 11}
 output: {root: outputs/smoke}
-

@@ -52,6 +52,11 @@ def fit_weight(
         raw = np.exp(np.clip(strength * projection, -30.0, 30.0))
     elif name == "quadratic":
         raw = epsilon + 1.0 + strength * projection**2
+    elif name == "linear":
+        raw = np.maximum(1.0 + strength * projection, epsilon)
+    elif name == "sigmoid":
+        scaled = np.clip(strength * projection, -30.0, 30.0)
+        raw = epsilon + 2.0 / (1.0 + np.exp(-scaled))
     elif name == "mahalanobis":
         mean = np.mean(x_reference, axis=0)
         scale = np.std(x_reference, axis=0)

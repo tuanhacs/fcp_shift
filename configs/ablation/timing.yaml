@@ -7,8 +7,8 @@ datasets:
       task: classification,
       train_fraction: 0.4,
     }
-  # - {name: electricity, source: openml, openml_id: 151, task: classification, train_fraction: 0.4}
-  # - {name: fashion_mnist, source: openml, openml_id: 40996, task: classification, train_fraction: 0.4}
+  - {name: fashion_mnist, source: openml, openml_id: 40996, task: classification, train_fraction: 0.4}
+  - {name: year, source: openml, openml_id: 44027, task: regression, train_fraction: 0.4}
 models:
   - {
       name: hist_gradient_boosting,
@@ -28,9 +28,10 @@ models:
       classification_score: log_margin,
     }
   - {
-      name: logistic,
+      name: linear,
       seed: 2026,
       C: 1.0,
+      alpha: 1.0,
       max_iter: 2000,
       tol: 1.0e-4,
       n_jobs: -1,
