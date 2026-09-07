@@ -118,17 +118,20 @@ def _plot_family(
             if row == 0:
                 axis.set_title(title)
             axis.set_xlim(0.0, 1.0)
-            axis.set_ylim(bottom=0.0)
-            if family == "inverse":
-                axis.set_ylim(0.0, 1.05)
+            axis.set_ylim(0.0, 1.0)
             set_publication_ticks(axis)
             axis.grid(alpha=0.25)
             if row == 0 and column == 1:
                 axis.legend(fontsize=font_size("legend", 8), ncol=2)
-    add_dataset_row_labels(axes, datasets)
-    figure.supxlabel(xlabel)
-    figure.supylabel(ylabel)
-    figure.tight_layout(rect=(0.06, 0.05, 1.0, 1.0))
+    if len(datasets) == 1:
+        axes[0, 0].set_xlabel(xlabel)
+        axes[0, 0].set_ylabel(ylabel)
+        figure.tight_layout()
+    else:
+        add_dataset_row_labels(axes, datasets)
+        figure.supxlabel(xlabel)
+        figure.supylabel(ylabel)
+        figure.tight_layout(rect=(0.06, 0.05, 1.0, 1.0))
     figure.savefig(output_path, bbox_inches="tight")
     plt.close(figure)
 
