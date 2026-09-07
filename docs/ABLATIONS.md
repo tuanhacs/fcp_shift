@@ -135,7 +135,7 @@ The runner supports:
 - linear/ridge regression or logistic regression;
 - multilayer perceptrons.
 
-The three configured weights are combined in one `2 x 3` figure named `models_weights_2x3.pdf`. Columns represent weight families; the top row contains the fixed/uniform alpha guarantees and the bottom row contains the fixed/uniform beta guarantees. Colors identify the paper guarantees, while line styles and markers identify underlying models. Figure legends use the paper notation from equations 7–10 instead of Goal 1–4 names. This isolates model robustness from a change in the target distribution.
+The three configured weights are combined in one `2 x 3` figure named `models_weights_2x3.pdf`. Columns represent weight families; the top row contains the fixed/uniform alpha guarantees and the bottom row contains the fixed/uniform beta guarantees. Each underlying model has a distinct color and no point markers are used; in the inverse row, solid/dashed lines distinguish the fixed/uniform beta quantities. Figure legends use the paper notation from equations 7–10 instead of Goal 1–4 names. Both rows are displayed on `[0, 1]`. This isolates model robustness from a change in the target distribution.
 
 ## 4. Inference-time ablation
 
