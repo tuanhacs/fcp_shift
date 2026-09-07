@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import matplotlib as mpl
 import numpy as np
 from matplotlib.axes import Axes
-from matplotlib.ticker import FixedLocator, LinearLocator
+from matplotlib.ticker import FixedLocator, FuncFormatter, LinearLocator
 
 
 @dataclass(frozen=True)
@@ -30,6 +30,17 @@ _RC_KEYS = (
     "legend.fontsize",
 )
 _RC_DEFAULTS = {key: mpl.rcParamsDefault[key] for key in _RC_KEYS}
+
+
+def _compact_tick(value: float, _position: int | None = None) -> str:
+    absolute = abs(value)
+    if absolute >= 1_000_000:
+        return f"{value / 1_000_000:g}M"
+    if absolute >= 1_000:
+        return f"{value / 1_000:g}k"
+    if 0 < absolute < 0.01:
+        return f"{value:.2g}"
+    return f"{value:g}"
 
 
 def configure_plot_style(style: PlotStyle) -> None:
@@ -85,6 +96,7 @@ def set_publication_ticks(
         else:
             ticks = values[np.rint(np.linspace(0, len(values) - 1, 3)).astype(int)]
         axis.set_xticks(ticks)
+        axis.xaxis.set_major_formatter(FuncFormatter(_compact_tick))
     if y_values is None:
         if yscale == "log":
             low, high = axis.get_ylim()
@@ -101,4 +113,5 @@ def set_publication_ticks(
         else:
             ticks = values[np.rint(np.linspace(0, len(values) - 1, 3)).astype(int)]
         axis.yaxis.set_major_locator(FixedLocator(ticks))
+        axis.yaxis.set_major_formatter(FuncFormatter(_compact_tick))
     axis.minorticks_off()

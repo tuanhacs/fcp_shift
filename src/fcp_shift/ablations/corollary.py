@@ -27,13 +27,26 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _plot(frame: pd.DataFrame, datasets: list[str], alphas: list[float], path: Path) -> None:
+    y_limits: dict[float, tuple[float, float]] = {}
+    for alpha in alphas:
+        alpha_frame = frame[np.isclose(frame.alpha, alpha)]
+        summary = alpha_frame.groupby(["dataset", "weight", "n"]).estimate.agg(
+            ["mean", "std"]
+        )
+        std = summary["std"].fillna(0.0)
+        lower = min(float(alpha), float((summary["mean"] - std).min()))
+        upper = max(float(alpha), float((summary["mean"] + std).max()))
+        span = max(upper - lower, 0.08 * alpha, 0.0025)
+        padding = 0.18 * span
+        y_limits[alpha] = (max(0.0, lower - padding), upper + padding)
+
     figure, axes = plt.subplots(
         len(datasets),
         len(alphas),
         figsize=figure_size((5 * len(alphas), 4 * len(datasets))),
         squeeze=False,
         sharex=True,
-        sharey=True,
+        sharey=False,
     )
     colors = {"exponential": "#0072B2", "quadratic": "#D55E00", "mahalanobis": "#009E73"}
     for row, dataset in enumerate(datasets):
@@ -54,6 +67,7 @@ def _plot(frame: pd.DataFrame, datasets: list[str], alphas: list[float], path: P
                 )
             if row == 0:
                 axis.set_title(rf"$\alpha={alpha:g}$")
+            axis.set_ylim(*y_limits[alpha])
             set_publication_ticks(
                 axis, x_values=subset.n.to_numpy(), xscale="log"
             )
