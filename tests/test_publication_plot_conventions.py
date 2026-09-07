@@ -27,3 +27,23 @@ def test_publication_ticks_are_linear_and_have_three_major_ticks() -> None:
     assert len(axis.get_xticks()) == 3
     assert len(axis.get_yticks()) == 3
     plt.close(figure)
+
+
+def test_publication_ticks_support_clean_log_axes() -> None:
+    figure, axis = plt.subplots()
+    axis.plot([250, 1000, 5000, 50000], [1e-4, 3e-4, 2e-3, 1e-2])
+
+    set_publication_ticks(
+        axis,
+        x_values=[250, 1000, 5000, 50000],
+        y_values=[1e-4, 3e-4, 2e-3, 1e-2],
+        xscale="log",
+        yscale="log",
+    )
+    figure.canvas.draw()
+
+    assert axis.get_xscale() == "log"
+    assert axis.get_yscale() == "log"
+    assert len(axis.get_xticks()) == 3
+    assert len(axis.get_yticks()) == 3
+    plt.close(figure)

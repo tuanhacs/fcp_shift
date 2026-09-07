@@ -183,7 +183,7 @@ def plot_asymptotic(
                 markeredgewidth=0.7,
                 zorder=2,
             )
-        axis.set_xscale("linear")
+        axis.set_xscale("log")
         axis.set_title(title, fontsize=font_size("title", 11.5), pad=5)
         axis.set_xlabel(xlabel, fontsize=font_size("label", 10.5), labelpad=4)
         axis.set_ylim(0.0, y_tick_max * 1.02)

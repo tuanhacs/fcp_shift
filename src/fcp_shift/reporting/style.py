@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import matplotlib as mpl
 import numpy as np
 from matplotlib.axes import Axes
-from matplotlib.ticker import LinearLocator
+from matplotlib.ticker import FixedLocator, LinearLocator
 
 
 @dataclass(frozen=True)
@@ -69,10 +69,13 @@ def set_publication_ticks(
     axis: Axes,
     *,
     x_values: list[float] | np.ndarray | None = None,
+    y_values: list[float] | np.ndarray | None = None,
+    xscale: str = "linear",
+    yscale: str = "linear",
 ) -> None:
-    """Use linear axes with exactly three uncluttered major ticks."""
-    axis.set_xscale("linear")
-    axis.set_yscale("linear")
+    """Use exactly three uncluttered major ticks on linear or log axes."""
+    axis.set_xscale(xscale)
+    axis.set_yscale(yscale)
     if x_values is None:
         axis.xaxis.set_major_locator(LinearLocator(3))
     else:
@@ -82,5 +85,20 @@ def set_publication_ticks(
         else:
             ticks = values[np.rint(np.linspace(0, len(values) - 1, 3)).astype(int)]
         axis.set_xticks(ticks)
-    axis.yaxis.set_major_locator(LinearLocator(3))
+    if y_values is None:
+        if yscale == "log":
+            low, high = axis.get_ylim()
+            ticks = np.geomspace(low, high, 3)
+            axis.yaxis.set_major_locator(FixedLocator(ticks))
+        else:
+            axis.yaxis.set_major_locator(LinearLocator(3))
+    else:
+        values = np.unique(np.asarray(y_values, dtype=float))
+        if yscale == "log":
+            values = values[values > 0.0]
+        if len(values) <= 3:
+            ticks = values
+        else:
+            ticks = values[np.rint(np.linspace(0, len(values) - 1, 3)).astype(int)]
+        axis.yaxis.set_major_locator(FixedLocator(ticks))
     axis.minorticks_off()

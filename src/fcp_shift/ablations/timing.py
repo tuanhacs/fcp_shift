@@ -53,8 +53,13 @@ def _plot(frame: pd.DataFrame, datasets: list[str], models: list[str], path: Pat
                 summary.columns = ["n", "median", "q10", "q90"]
                 axis.plot(summary.n, summary["median"], marker="o", color=color, label=family)
                 axis.fill_between(summary.n, summary.q10, summary.q90, color=color, alpha=0.12)
-            axis.set_ylim(bottom=0.0)
-            set_publication_ticks(axis, x_values=subset.n.to_numpy())
+            set_publication_ticks(
+                axis,
+                x_values=subset.n.to_numpy(),
+                y_values=subset.seconds.to_numpy(),
+                xscale="log",
+                yscale="log",
+            )
             if row == 0:
                 axis.set_title(publication_model_name(model))
             axis.grid(alpha=0.25)

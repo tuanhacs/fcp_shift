@@ -54,7 +54,9 @@ def _plot(frame: pd.DataFrame, datasets: list[str], alphas: list[float], path: P
                 )
             if row == 0:
                 axis.set_title(rf"$\alpha={alpha:g}$")
-            set_publication_ticks(axis, x_values=subset.n.to_numpy())
+            set_publication_ticks(
+                axis, x_values=subset.n.to_numpy(), xscale="log"
+            )
             axis.grid(alpha=0.25)
             if row == 0 and column == len(alphas) - 1:
                 axis.legend(fontsize=font_size("legend", 8))

@@ -76,7 +76,9 @@ def _plot(
                 )
             if row == 0:
                 axis.set_title(titles[path_name])
-            set_publication_ticks(axis, x_values=subset.x.to_numpy())
+            set_publication_ticks(
+                axis, x_values=subset.x.to_numpy(), xscale="log"
+            )
             axis.grid(alpha=0.25)
             if row == 0 and column == 2:
                 axis.legend(fontsize=font_size("legend", 8))
