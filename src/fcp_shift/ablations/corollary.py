@@ -36,8 +36,8 @@ def _plot(frame: pd.DataFrame, datasets: list[str], alphas: list[float], path: P
         std = summary["std"].fillna(0.0)
         lower = min(float(alpha), float((summary["mean"] - std).min()))
         upper = max(float(alpha), float((summary["mean"] + std).max()))
-        span = max(upper - lower, 0.08 * alpha, 0.0025)
-        padding = 0.18 * span
+        span = max(upper - lower, 0.02 * alpha, 0.001)
+        padding = 0.08 * span
         y_limits[alpha] = (max(0.0, lower - padding), upper + padding)
 
     figure, axes = plt.subplots(
