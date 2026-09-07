@@ -13,7 +13,12 @@ import numpy as np
 import pandas as pd
 
 from fcp_shift.conformal.weighted_cp import fcp_curve
-from fcp_shift.ablations.common import scoped_ablation_path
+from fcp_shift.ablations.common import (
+    publication_dataset_name,
+    publication_model_name,
+    scoped_ablation_path,
+    set_publication_ticks,
+)
 from fcp_shift.data import prepare_dataset
 from fcp_shift.experiments.common import calculate_goals, grid
 from fcp_shift.models import conformity_scores, fit_model
@@ -47,7 +52,13 @@ def _summarize_curves(curves: dict[tuple[str, str], list], alpha, beta) -> pd.Da
     return pd.DataFrame(records)
 
 
-def _plot(summary: pd.DataFrame, weights: list[str], models: list[str], output: Path) -> None:
+def _plot(
+    summary: pd.DataFrame,
+    weights: list[str],
+    models: list[str],
+    dataset: str,
+    output: Path,
+) -> None:
     colors = {model: plt.get_cmap("tab10")(index) for index, model in enumerate(models)}
     for weight in weights:
         subset_weight = summary[summary.weight == weight]
@@ -61,9 +72,20 @@ def _plot(summary: pd.DataFrame, weights: list[str], models: list[str], output: 
                 curve = subset_weight[
                     (subset_weight.model == model) & (subset_weight.curve == "empirical_fcp")
                 ]
-                axis.plot(curve.x, curve["mean"], color=colors[model], label=model)
+                axis.plot(
+                    curve.x,
+                    curve["mean"],
+                    color=colors[model],
+                    label=publication_model_name(model),
+                )
                 axis.fill_between(curve.x, curve.q10, curve.q90, color=colors[model], alpha=0.10)
             axis.set(xlabel=r"Miscoverage $\alpha$", ylabel="FCP / bound", title=f"{weight} — Goal {goal}")
+            axis.set_title(
+                f"{publication_dataset_name(dataset)} — {weight} — Goal {goal}"
+            )
+            axis.set_xlim(0.0, 1.0)
+            axis.set_ylim(bottom=0.0)
+            set_publication_ticks(axis)
             axis.grid(alpha=0.25)
             axis.legend(fontsize=font_size("legend", 8))
             figure.tight_layout()
@@ -76,9 +98,20 @@ def _plot(summary: pd.DataFrame, weights: list[str], models: list[str], output: 
                 curve = subset_weight[
                     (subset_weight.model == model) & (subset_weight.curve == f"goal{goal}_fcp")
                 ]
-                axis.plot(curve.x, curve["mean"], color=colors[model], label=model)
+                axis.plot(
+                    curve.x,
+                    curve["mean"],
+                    color=colors[model],
+                    label=publication_model_name(model),
+                )
                 axis.fill_between(curve.x, curve.q10, curve.q90, color=colors[model], alpha=0.10)
             axis.set(xlabel=r"Target FCP $\beta$", ylabel="Empirical FCP", title=f"{weight} — Goal {goal}")
+            axis.set_title(
+                f"{publication_dataset_name(dataset)} — {weight} — Goal {goal}"
+            )
+            axis.set_xlim(0.0, 1.0)
+            axis.set_ylim(0.0, 1.0)
+            set_publication_ticks(axis)
             axis.grid(alpha=0.25)
             axis.legend(fontsize=font_size("legend", 8))
             figure.tight_layout()
@@ -158,5 +191,5 @@ def run_model_ablation(config: dict[str, Any], force: bool = False) -> None:
         run.save_metrics(metrics)
         summary.to_csv(run.path / "curves_summary.csv", index=False)
         run.save_summary({"rows": len(metrics), **metrics.mean(numeric_only=True).to_dict()})
-        _plot(summary, weight_names, model_names, run.path)
+        _plot(summary, weight_names, model_names, dataset_config["name"], run.path)
         run.mark_complete()

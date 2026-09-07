@@ -12,7 +12,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from fcp_shift.ablations.common import prepare_scored_problem, scoped_ablation_path
+from fcp_shift.ablations.common import (
+    prepare_scored_problem,
+    publication_dataset_name,
+    scoped_ablation_path,
+    set_publication_ticks,
+)
 from fcp_shift.conformal.baselines import (
     calibrate_cojer,
     dkw_forward,
@@ -40,6 +45,7 @@ def _plot_dataset(
     cojer_bound: np.ndarray,
     output: Path,
 ) -> None:
+    display_dataset = publication_dataset_name(dataset)
     colors = {
         "exponential": "#0072B2",
         "quadratic": "#D55E00",
@@ -53,7 +59,14 @@ def _plot_dataset(
         axis.plot(alpha, curves["forward"].mean(axis=0), color=color, linestyle="--", label=f"Empirical FCP — {weight}")
     axis.plot(alpha, dkw_bound, color="#6A3D9A", linewidth=2.3, label="DKW bound")
     axis.plot(alpha, cojer_bound, color="#E31A1C", linewidth=2.3, label="CoJER bound")
-    axis.set(xlabel=r"Miscoverage $\alpha$", ylabel="Ordinary empirical FCP / bound", title=f"{dataset}: baselines under shift")
+    axis.set(
+        xlabel=r"Miscoverage $\alpha$",
+        ylabel="Ordinary empirical FCP / bound",
+        title=f"{display_dataset}: baselines under shift",
+    )
+    axis.set_xlim(0.0, 1.0)
+    axis.set_ylim(bottom=0.0)
+    set_publication_ticks(axis)
     axis.grid(alpha=0.25)
     axis.legend(fontsize=font_size("legend", 8))
     figure.tight_layout()
@@ -66,7 +79,14 @@ def _plot_dataset(
         color = colors.get(weight, plt.get_cmap("tab10")(index))
         axis.plot(beta, curves["dkw_inverse"].mean(axis=0), color=color, linestyle="-", label=f"DKW — {weight}")
         axis.plot(beta, curves["cojer_inverse"].mean(axis=0), color=color, linestyle=":", linewidth=2.2, label=f"CoJER — {weight}")
-    axis.set(xlabel=r"Target FCP $\beta$", ylabel="Ordinary empirical FCP", title=f"{dataset}: inverse baselines under shift")
+    axis.set(
+        xlabel=r"Target FCP $\beta$",
+        ylabel="Ordinary empirical FCP",
+        title=f"{display_dataset}: inverse baselines under shift",
+    )
+    axis.set_xlim(0.0, 1.0)
+    axis.set_ylim(0.0, 1.0)
+    set_publication_ticks(axis)
     axis.grid(alpha=0.25)
     axis.legend(fontsize=font_size("legend", 8), ncol=2)
     figure.tight_layout()

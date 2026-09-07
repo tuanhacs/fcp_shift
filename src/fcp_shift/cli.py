@@ -5,6 +5,7 @@ import logging
 
 from fcp_shift.config import filter_config, load_config
 from fcp_shift.ablations import RUNNERS as ABLATION_RUNNERS
+from fcp_shift.ablations.replot import replot_ablation
 from fcp_shift.experiments import run_asymptotic, run_covariate_shift, run_transport_shift
 from fcp_shift.reporting import make_covariate_transport_figure, make_grouped_figures
 from fcp_shift.reporting.style import PlotStyle, configure_plot_style
@@ -61,6 +62,12 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--force", action="store_true")
     run.add_argument("--log-level", default="INFO")
     _add_plot_arguments(run)
+    plot = subparsers.add_parser(
+        "plot", help="Regenerate ablation PDFs from saved CSV/NPZ results"
+    )
+    plot.add_argument("--config", required=True)
+    plot.add_argument("--log-level", default="INFO")
+    _add_plot_arguments(plot)
     figures = subparsers.add_parser(
         "figures", help="Aggregate completed weights into shared main figures"
     )
@@ -108,6 +115,11 @@ def main(argv: list[str] | None = None) -> None:
             print(path)
         return
     config = load_config(args.config)
+    if args.command == "plot":
+        generated = replot_ablation(config)
+        for path in generated:
+            print(path)
+        return
     if args.command == "figures":
         generated = make_grouped_figures(config)
         for path in generated:

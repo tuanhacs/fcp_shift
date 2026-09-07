@@ -36,6 +36,30 @@ python -m fcp_shift.cli run \
 
 Use `--force` to replace a completed run. Otherwise a directory containing `DONE` is skipped.
 
+## Plot again without rerunning experiments
+
+The `plot` command reads the saved CSV/NPZ files and only regenerates PDFs. It does not load OpenML data, fit models, or repeat Monte Carlo simulations. For example:
+
+```bash
+python -m fcp_shift.cli plot \
+  --config configs/ablation/corollary.yaml \
+  --figsize 16 7 \
+  --title-font-size 13 \
+  --label-font-size 12 \
+  --tick-font-size 11 \
+  --legend-font-size 10
+```
+
+Replot all six ablations with the same style overrides:
+
+```bash
+bash scripts/plot_ablation_studies.sh \
+  --font-size 11 \
+  --figsize 16 7
+```
+
+The YAML and output root must match the completed experiment. The regenerated PDFs overwrite only the existing figure files; metrics and completion markers are left unchanged.
+
 ## Algorithm naming
 
 The old notebook names the calibration-only estimator of `G` as `ghat_alg2`. In the current paper draft this estimator is Algorithm 1, while Algorithm 2 estimates the generalized inverse and Algorithm 3 selects the inverse conformal level. Metadata for the Corollary and delta ablations records both names:

@@ -8,6 +8,8 @@ import numpy as np
 
 from fcp_shift.data import PreparedDataset, prepare_dataset
 from fcp_shift.models import conformity_scores, fit_model
+from fcp_shift.reporting.labels import display_dataset_name
+from fcp_shift.reporting.style import set_publication_ticks
 
 
 @dataclass
@@ -15,6 +17,35 @@ class ScoredProblem:
     dataset: PreparedDataset
     model: Any
     scores: np.ndarray
+
+
+def publication_dataset_name(name: str) -> str:
+    """Return the paper-facing name used in figure titles and row labels."""
+    return display_dataset_name(name)
+
+
+def publication_model_name(name: str) -> str:
+    return {
+        "hist_gradient_boosting": "HistGradientBoosting",
+        "random_forest": "Random Forest",
+        "linear": "Linear / Ridge",
+        "logistic": "Logistic Regression",
+        "mlp": "MLP",
+    }.get(name, name.replace("_", " ").title())
+
+
+def add_dataset_row_labels(axes: np.ndarray, datasets: list[str]) -> None:
+    """Label each dataset row once, outside the first column."""
+    for row, dataset in enumerate(datasets):
+        axes[row, 0].annotate(
+            publication_dataset_name(dataset),
+            xy=(-0.18, 0.5),
+            xycoords="axes fraction",
+            rotation=90,
+            ha="center",
+            va="center",
+            fontweight="bold",
+        )
 
 
 def prepare_scored_problem(

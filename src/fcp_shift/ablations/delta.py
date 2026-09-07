@@ -11,7 +11,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from fcp_shift.ablations.common import prepare_scored_problem, scoped_ablation_path
+from fcp_shift.ablations.common import (
+    add_dataset_row_labels,
+    prepare_scored_problem,
+    scoped_ablation_path,
+    set_publication_ticks,
+)
 from fcp_shift.conformal import CalibrationStructure, estimate_g_algorithm1
 from fcp_shift.conformal.bounds import fixed_constants, uniform_constants
 from fcp_shift.reporting import RunDirectory
@@ -36,6 +41,8 @@ def _plot(
         3,
         figsize=figure_size((15, 4 * len(datasets))),
         squeeze=False,
+        sharex=True,
+        sharey=True,
     )
     palette = plt.get_cmap("tab10")
     for row, dataset in enumerate(datasets):
@@ -67,14 +74,16 @@ def _plot(
                     color=color,
                     alpha=0.10,
                 )
-            axis.set_xscale("log")
-            axis.set_title(f"{dataset}: {titles[path_name]}")
-            axis.set_xlabel("Increasing sample size")
-            axis.set_ylabel(r"Estimated $G(\alpha+\Delta)+\epsilon$")
+            if row == 0:
+                axis.set_title(titles[path_name])
+            set_publication_ticks(axis, x_values=subset.x.to_numpy())
             axis.grid(alpha=0.25)
             if row == 0 and column == 2:
                 axis.legend(fontsize=font_size("legend", 8))
-    figure.tight_layout()
+    add_dataset_row_labels(axes, datasets)
+    figure.supxlabel("Increasing sample size")
+    figure.supylabel(r"Estimated $G(\alpha+\Delta)+\epsilon$")
+    figure.tight_layout(rect=(0.06, 0.05, 1.0, 1.0))
     figure.savefig(output_path, bbox_inches="tight")
     plt.close(figure)
 

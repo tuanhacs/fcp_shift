@@ -10,7 +10,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .style import figure_size, font_size
+from .labels import display_dataset_name
+from .style import figure_size, font_size, set_publication_ticks
 
 LOGGER = logging.getLogger(__name__)
 
@@ -117,6 +118,9 @@ def plot_grouped_weights(
         axis.set_title(f"{title} — Goal {goal}")
         axis.set_xlabel(r"Miscoverage level $\alpha$")
         axis.set_ylabel("FCP / bound")
+        axis.set_xlim(0.0, 1.0)
+        axis.set_ylim(bottom=0.0)
+        set_publication_ticks(axis)
         axis.grid(alpha=0.25)
         axis.legend(fontsize=font_size("legend", 8), ncol=2)
         figure.tight_layout()
@@ -140,6 +144,9 @@ def plot_grouped_weights(
         axis.set_title(f"{title} — Goal {goal}")
         axis.set_xlabel(r"Target FCP $\beta$")
         axis.set_ylabel("Empirical FCP")
+        axis.set_xlim(0.0, 1.0)
+        axis.set_ylim(0.0, 1.0)
+        set_publication_ticks(axis)
         axis.grid(alpha=0.25)
         axis.legend(fontsize=font_size("legend", 9))
         figure.tight_layout()
@@ -162,6 +169,9 @@ def plot_grouped_weights(
         axis.set_title(f"{title} — Goal {goal}")
         axis.set_xlabel(r"Target FCP $\beta$")
         axis.set_ylabel(r"Selected miscoverage $\alpha$")
+        axis.set_xlim(0.0, 1.0)
+        axis.set_ylim(0.0, 1.0)
+        set_publication_ticks(axis)
         axis.grid(alpha=0.25)
         axis.legend(fontsize=font_size("legend", 9))
         figure.tight_layout()
@@ -205,10 +215,13 @@ def make_grouped_figures(config: dict[str, Any]) -> list[Path]:
                 )
                 continue
             destination = figure_root / dataset_name
-            title = dataset_name
+            title = display_dataset_name(dataset_name)
             if rho is not None:
                 destination = destination / f"rho_{rho:.2f}"
                 title = f"{dataset_name} — rho={rho:.2f}"
+            title = display_dataset_name(dataset_name)
+            if rho is not None:
+                title = f"{title} — rho={rho:.2f}"
             plot_grouped_weights(results, destination, title)
             generated.extend(sorted(destination.glob("grouped_weights_*.pdf")))
             LOGGER.info(

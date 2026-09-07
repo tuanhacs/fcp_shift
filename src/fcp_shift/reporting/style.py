@@ -3,6 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import matplotlib as mpl
+import numpy as np
+from matplotlib.axes import Axes
+from matplotlib.ticker import LinearLocator
 
 
 @dataclass(frozen=True)
@@ -60,3 +63,24 @@ def font_size(kind: str, default: float) -> float:
     if _ACTIVE_STYLE.font_size is not None:
         return _ACTIVE_STYLE.font_size
     return default
+
+
+def set_publication_ticks(
+    axis: Axes,
+    *,
+    x_values: list[float] | np.ndarray | None = None,
+) -> None:
+    """Use linear axes with exactly three uncluttered major ticks."""
+    axis.set_xscale("linear")
+    axis.set_yscale("linear")
+    if x_values is None:
+        axis.xaxis.set_major_locator(LinearLocator(3))
+    else:
+        values = np.unique(np.asarray(x_values, dtype=float))
+        if len(values) <= 3:
+            ticks = values
+        else:
+            ticks = values[np.rint(np.linspace(0, len(values) - 1, 3)).astype(int)]
+        axis.set_xticks(ticks)
+    axis.yaxis.set_major_locator(LinearLocator(3))
+    axis.minorticks_off()

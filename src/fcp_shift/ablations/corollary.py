@@ -11,7 +11,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from fcp_shift.ablations.common import prepare_scored_problem, scoped_ablation_path
+from fcp_shift.ablations.common import (
+    add_dataset_row_labels,
+    prepare_scored_problem,
+    scoped_ablation_path,
+    set_publication_ticks,
+)
 from fcp_shift.conformal import CalibrationStructure, estimate_g_algorithm1
 from fcp_shift.reporting import RunDirectory
 from fcp_shift.reporting.style import figure_size, font_size
@@ -27,6 +32,8 @@ def _plot(frame: pd.DataFrame, datasets: list[str], alphas: list[float], path: P
         len(alphas),
         figsize=figure_size((5 * len(alphas), 4 * len(datasets))),
         squeeze=False,
+        sharex=True,
+        sharey=True,
     )
     colors = {"exponential": "#0072B2", "quadratic": "#D55E00", "mahalanobis": "#009E73"}
     for row, dataset in enumerate(datasets):
@@ -45,14 +52,16 @@ def _plot(frame: pd.DataFrame, datasets: list[str], alphas: list[float], path: P
                     color=color,
                     alpha=0.12,
                 )
-            axis.set_xscale("log")
-            axis.set_title(f"{dataset}, alpha={alpha:g}")
-            axis.set_xlabel(r"Calibration size $n$")
-            axis.set_ylabel(r"Estimated $G_{w,n}(\alpha)$")
+            if row == 0:
+                axis.set_title(rf"$\alpha={alpha:g}$")
+            set_publication_ticks(axis, x_values=subset.n.to_numpy())
             axis.grid(alpha=0.25)
             if row == 0 and column == len(alphas) - 1:
                 axis.legend(fontsize=font_size("legend", 8))
-    figure.tight_layout()
+    add_dataset_row_labels(axes, datasets)
+    figure.supxlabel(r"Calibration size $n$")
+    figure.supylabel(r"Estimated $G_{w,n}(\alpha)$")
+    figure.tight_layout(rect=(0.06, 0.05, 1.0, 1.0))
     figure.savefig(path, bbox_inches="tight")
     plt.close(figure)
 

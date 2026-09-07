@@ -17,7 +17,12 @@ from fcp_shift.conformal import (
     estimate_g_algorithm1,
     estimate_g_inverse_algorithm2,
 )
-from fcp_shift.ablations.common import scoped_ablation_path
+from fcp_shift.ablations.common import (
+    add_dataset_row_labels,
+    publication_model_name,
+    scoped_ablation_path,
+    set_publication_ticks,
+)
 from fcp_shift.conformal.bounds import fixed_constants, uniform_constants
 from fcp_shift.data import prepare_dataset
 from fcp_shift.experiments.common import grid
@@ -36,6 +41,7 @@ def _plot(frame: pd.DataFrame, datasets: list[str], models: list[str], path: Pat
         len(models),
         figsize=figure_size((5 * len(models), 4 * len(datasets))),
         squeeze=False,
+        sharex=True,
     )
     for row, dataset in enumerate(datasets):
         for column, model in enumerate(models):
@@ -47,15 +53,17 @@ def _plot(frame: pd.DataFrame, datasets: list[str], models: list[str], path: Pat
                 summary.columns = ["n", "median", "q10", "q90"]
                 axis.plot(summary.n, summary["median"], marker="o", color=color, label=family)
                 axis.fill_between(summary.n, summary.q10, summary.q90, color=color, alpha=0.12)
-            axis.set_xscale("log")
-            axis.set_yscale("log")
-            axis.set_title(f"{dataset} — {model}")
-            axis.set_xlabel(r"Calibration size $n$")
-            axis.set_ylabel("Wall time (seconds)")
+            axis.set_ylim(bottom=0.0)
+            set_publication_ticks(axis, x_values=subset.n.to_numpy())
+            if row == 0:
+                axis.set_title(publication_model_name(model))
             axis.grid(alpha=0.25)
             if row == 0 and column == len(models) - 1:
                 axis.legend(fontsize=font_size("legend", 8))
-    figure.tight_layout()
+    add_dataset_row_labels(axes, datasets)
+    figure.supxlabel(r"Calibration size $n$")
+    figure.supylabel("Wall time (seconds)")
+    figure.tight_layout(rect=(0.06, 0.05, 1.0, 1.0))
     figure.savefig(path, bbox_inches="tight")
     plt.close(figure)
 

@@ -11,7 +11,7 @@ import pandas as pd
 from matplotlib.ticker import FixedLocator, FuncFormatter, FormatStrFormatter
 
 from .labels import GOAL_LABELS
-from .style import figure_size, font_size
+from .style import figure_size, font_size, set_publication_ticks
 
 
 COLORS = {
@@ -46,6 +46,9 @@ def plot_goal_results(
     _mean_band(axis, alpha, arrays["goal1_bound"], "Goal 1", COLORS["goal1"])
     _mean_band(axis, alpha, arrays["goal2_bound"], "Goal 2", COLORS["goal2"])
     axis.set(xlabel=r"Miscoverage level $\alpha$", ylabel="FCP / bound", title=title_suffix)
+    axis.set_xlim(0.0, 1.0)
+    axis.set_ylim(bottom=0.0)
+    set_publication_ticks(axis)
     axis.grid(alpha=0.25)
     axis.legend()
     figure.tight_layout()
@@ -57,6 +60,9 @@ def plot_goal_results(
     _mean_band(axis, beta, arrays["goal3_fcp"], "Goal 3", COLORS["goal3"])
     _mean_band(axis, beta, arrays["goal4_fcp"], "Goal 4", COLORS["goal4"])
     axis.set(xlabel=r"Target FCP $\beta$", ylabel="Empirical FCP", title=title_suffix)
+    axis.set_xlim(0.0, 1.0)
+    axis.set_ylim(0.0, 1.0)
+    set_publication_ticks(axis)
     axis.grid(alpha=0.25)
     axis.legend()
     figure.tight_layout()
@@ -71,6 +77,9 @@ def plot_goal_results(
         ylabel=r"Selected miscoverage $\alpha$",
         title=title_suffix,
     )
+    axis.set_xlim(0.0, 1.0)
+    axis.set_ylim(0.0, 1.0)
+    set_publication_ticks(axis)
     axis.grid(alpha=0.25)
     axis.legend()
     figure.tight_layout()
@@ -174,7 +183,7 @@ def plot_asymptotic(
                 markeredgewidth=0.7,
                 zorder=2,
             )
-        axis.set_xscale("log")
+        axis.set_xscale("linear")
         axis.set_title(title, fontsize=font_size("title", 11.5), pad=5)
         axis.set_xlabel(xlabel, fontsize=font_size("label", 10.5), labelpad=4)
         axis.set_ylim(0.0, y_tick_max * 1.02)

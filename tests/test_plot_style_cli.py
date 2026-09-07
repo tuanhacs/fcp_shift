@@ -40,3 +40,22 @@ def test_plot_sizes_must_be_positive() -> None:
                 "5",
             ]
         )
+
+
+def test_ablation_plot_only_accepts_style_arguments() -> None:
+    args = build_parser().parse_args(
+        [
+            "plot",
+            "--config",
+            "configs/ablation/corollary.yaml",
+            "--figsize",
+            "16",
+            "7",
+            "--title-font-size",
+            "13",
+        ]
+    )
+
+    assert args.command == "plot"
+    assert args.figsize == [16.0, 7.0]
+    assert args.title_font_size == 13.0

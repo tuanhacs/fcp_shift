@@ -12,6 +12,7 @@ from matplotlib.ticker import FixedLocator, FormatStrFormatter, FuncFormatter
 
 from .grouped import load_weight_runs
 from .labels import (
+    display_dataset_name,
     FIXED_ALPHA_LABEL,
     FIXED_BETA_LABEL,
     UNIFORM_ALPHA_LABEL,
@@ -157,11 +158,7 @@ def _plot_inverse(
 
 def _display_name(dataset: dict[str, Any]) -> str:
     name = str(dataset.get("title", dataset["name"]))
-    canonical_names = {
-        "fashion_mnist": "Fashion-MNIST",
-        "year": "YearPredictionMSD",
-    }
-    return canonical_names.get(name, name.replace("_", " ").title())
+    return display_dataset_name(name)
 
 
 def make_covariate_transport_figure(

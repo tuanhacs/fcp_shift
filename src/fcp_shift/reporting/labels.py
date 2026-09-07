@@ -9,3 +9,17 @@ GOAL_LABELS = {
     3: FIXED_BETA_LABEL,
     4: UNIFORM_BETA_LABEL,
 }
+
+DATASET_DISPLAY_NAMES = {
+    "adult": "Adult",
+    "allstate": "Allstate Claims Severity",
+    "diamonds": "Diamonds",
+    "electricity": "Electricity",
+    "fashion_mnist": "Fashion-MNIST",
+    "mnist": "MNIST",
+    "year": "YearPredictionMSD",
+}
+
+
+def display_dataset_name(name: str) -> str:
+    return DATASET_DISPLAY_NAMES.get(name, name.replace("_", " ").title())

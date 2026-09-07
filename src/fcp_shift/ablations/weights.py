@@ -10,7 +10,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from fcp_shift.ablations.common import prepare_scored_problem, scoped_ablation_path
+from fcp_shift.ablations.common import (
+    add_dataset_row_labels,
+    prepare_scored_problem,
+    scoped_ablation_path,
+    set_publication_ticks,
+)
 from fcp_shift.experiments.common import calculate_goals, grid, stack_goal_results
 from fcp_shift.reporting import RunDirectory
 from fcp_shift.reporting.labels import (
@@ -34,15 +39,8 @@ WEIGHT_COLORS = {
 }
 
 
-def _display_name(name: str) -> str:
-    return {
-        "fashion_mnist": "Fashion-MNIST",
-        "year": "YearPredictionMSD",
-    }.get(name, name.replace("_", " ").title())
-
-
 def _plot_family(
-    curves: dict[tuple[str, str, str], dict[str, np.ndarray]],
+    curves: dict[tuple[str, str, str], dict[str, np.ndarray]] | pd.DataFrame,
     datasets: list[str],
     weights: list[str],
     shift: str,
@@ -86,13 +84,27 @@ def _plot_family(
                 label=reference_label,
             )
             for index, weight in enumerate(weights):
-                values = curves[(shift, dataset, weight)][curve_name]
-                mean = values.mean(axis=0)
-                std = (
-                    values.std(axis=0, ddof=1)
-                    if values.shape[0] > 1
-                    else np.zeros_like(mean)
-                )
+                if isinstance(curves, pd.DataFrame):
+                    summary = curves[
+                        (curves["shift"] == shift)
+                        & (curves["dataset"] == dataset)
+                        & (curves["weight"] == weight)
+                        & (curves["curve"] == curve_name)
+                    ].sort_values("x")
+                    if summary.empty:
+                        raise ValueError(
+                            f"Missing saved curve for {shift}/{dataset}/{weight}/{curve_name}"
+                        )
+                    mean = summary["mean"].to_numpy(dtype=float)
+                    std = summary["std"].to_numpy(dtype=float)
+                else:
+                    values = curves[(shift, dataset, weight)][curve_name]
+                    mean = values.mean(axis=0)
+                    std = (
+                        values.std(axis=0, ddof=1)
+                        if values.shape[0] > 1
+                        else np.zeros_like(mean)
+                    )
                 color = WEIGHT_COLORS.get(weight, plt.get_cmap("tab10")(index))
                 axis.fill_between(
                     x,
@@ -103,17 +115,20 @@ def _plot_family(
                     linewidth=0,
                 )
                 axis.plot(x, mean, color=color, linewidth=2, label=weight)
-            axis.set_title(title)
-            axis.set_xlabel(xlabel)
-            axis.set_ylabel(f"{_display_name(dataset)}\n{ylabel}")
+            if row == 0:
+                axis.set_title(title)
             axis.set_xlim(0.0, 1.0)
             axis.set_ylim(bottom=0.0)
             if family == "inverse":
                 axis.set_ylim(0.0, 1.05)
+            set_publication_ticks(axis)
             axis.grid(alpha=0.25)
             if row == 0 and column == 1:
                 axis.legend(fontsize=font_size("legend", 8), ncol=2)
-    figure.tight_layout()
+    add_dataset_row_labels(axes, datasets)
+    figure.supxlabel(xlabel)
+    figure.supylabel(ylabel)
+    figure.tight_layout(rect=(0.06, 0.05, 1.0, 1.0))
     figure.savefig(output_path, bbox_inches="tight")
     plt.close(figure)
 

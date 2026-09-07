@@ -8,7 +8,7 @@ This repository contains reproducible implementations of the three main experime
 
 The code is a standalone Python package. It does not depend on notebook state. Every run stores its resolved configuration, environment metadata, raw results, summaries, figures, and a completion marker.
 
-The six ablation workflows—Corollary convergence, delta allocation, underlying models, inference time, weight misspecification, and DKW/CoJER baselines—are documented in [docs/ABLATIONS.md](docs/ABLATIONS.md).
+The six ablation workflows—Corollary convergence, delta allocation, underlying models, inference time, weight families, and DKW/CoJER baselines—are documented in [docs/ABLATIONS.md](docs/ABLATIONS.md).
 
 ## Project layout
 
@@ -200,7 +200,19 @@ python -m fcp_shift.cli run \
   --legend-font-size 9
 ```
 
-Completed main asymptotic runs redraw from `summary.csv`. Other completed `run` tasks retain their existing plots unless rerun with `--force`; the dedicated `figures` and `main-figure` commands always redraw from saved curves.
+Completed main asymptotic runs redraw from `summary.csv`. To redraw an ablation without rerunning it, use the saved results with `plot`:
+
+```bash
+python -m fcp_shift.cli plot \
+  --config configs/ablation/corollary.yaml \
+  --figsize 16 7 \
+  --title-font-size 13 \
+  --label-font-size 12 \
+  --tick-font-size 11 \
+  --legend-font-size 10
+```
+
+Use `bash scripts/plot_ablation_studies.sh` to redraw all six ablations. The dedicated `figures`, `main-figure`, and ablation `plot` commands only read saved results; they do not repeat model fitting or Monte Carlo experiments.
 
 ## Selecting a dataset, weight, shift, or seed
 
