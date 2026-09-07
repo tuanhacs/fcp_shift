@@ -11,6 +11,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.lines import Line2D
 
 from fcp_shift.conformal.weighted_cp import fcp_curve
 from fcp_shift.ablations.common import (
@@ -24,9 +25,15 @@ from fcp_shift.experiments.common import calculate_goals, grid
 from fcp_shift.models import conformity_scores, fit_model
 from fcp_shift.reporting import RunDirectory
 from fcp_shift.reporting.labels import (
+    EMPIRICAL_COLOR,
+    FIXED_ALPHA_COLOR,
     FIXED_ALPHA_LABEL,
+    FIXED_BETA_COLOR,
     FIXED_BETA_LABEL,
+    TARGET_COLOR,
+    UNIFORM_ALPHA_COLOR,
     UNIFORM_ALPHA_LABEL,
+    UNIFORM_BETA_COLOR,
     UNIFORM_BETA_LABEL,
 )
 from fcp_shift.reporting.style import figure_size, font_size
@@ -132,9 +139,12 @@ def _plot(
     dataset: str,
     output: Path,
 ) -> None:
-    model_colors = {
-        model: plt.get_cmap("tab10")(index) for index, model in enumerate(models)
-    }
+    model_styles = [
+        ("-", "o"),
+        ("--", "s"),
+        ("-.", "^"),
+        (":", "D"),
+    ]
     for weight in weights:
         subset_weight = summary[summary.weight == weight]
         for obsolete in (
@@ -146,16 +156,20 @@ def _plot(
             obsolete.unlink(missing_ok=True)
 
         figure, axis = plt.subplots(figsize=figure_size((8, 5)))
-        for model in models:
+        for model_index, model in enumerate(models):
             empirical = subset_weight[
                 (subset_weight.model == model)
                 & (subset_weight.curve == "empirical_fcp")
             ].sort_values("x")
             name = publication_model_name(model)
+            linestyle, marker = model_styles[model_index % len(model_styles)]
             axis.plot(
                 empirical.x,
                 empirical["mean"],
-                color=model_colors[model],
+                color=EMPIRICAL_COLOR,
+                linestyle=linestyle,
+                marker=marker,
+                markevery=max(len(empirical) // 8, 1),
                 linewidth=1.8,
                 label=f"Empirical FCP — {name}",
             )
@@ -163,12 +177,12 @@ def _plot(
                 empirical.x,
                 empirical.q10,
                 empirical.q90,
-                color=model_colors[model],
+                color=EMPIRICAL_COLOR,
                 alpha=0.08,
             )
         for curve_name, color, linestyle, label in (
-            ("goal1_bound", "#0072B2", "--", FIXED_ALPHA_LABEL),
-            ("goal2_bound", "#D55E00", ":", UNIFORM_ALPHA_LABEL),
+            ("goal1_bound", FIXED_ALPHA_COLOR, "-", FIXED_ALPHA_LABEL),
+            ("goal2_bound", UNIFORM_ALPHA_COLOR, "-", UNIFORM_ALPHA_LABEL),
         ):
             bound = subset_weight[
                 (subset_weight.model == models[0])
@@ -203,16 +217,17 @@ def _plot(
         axis.plot(
             [0, 1],
             [0, 1],
-            color="black",
+            color=TARGET_COLOR,
             linestyle="--",
             linewidth=2,
             label=r"Target $\beta$",
         )
-        for model in models:
+        for model_index, model in enumerate(models):
             name = publication_model_name(model)
-            for curve_name, linestyle, label in (
-                ("goal3_fcp", "-", FIXED_BETA_LABEL),
-                ("goal4_fcp", ":", UNIFORM_BETA_LABEL),
+            linestyle, marker = model_styles[model_index % len(model_styles)]
+            for curve_name, color, label in (
+                ("goal3_fcp", FIXED_BETA_COLOR, FIXED_BETA_LABEL),
+                ("goal4_fcp", UNIFORM_BETA_COLOR, UNIFORM_BETA_LABEL),
             ):
                 curve = subset_weight[
                     (subset_weight.model == model)
@@ -221,8 +236,10 @@ def _plot(
                 axis.plot(
                     curve.x,
                     curve["mean"],
-                    color=model_colors[model],
+                    color=color,
                     linestyle=linestyle,
+                    marker=marker,
+                    markevery=max(len(curve) // 8, 1),
                     linewidth=2,
                     label=f"{name}: {label}",
                 )
@@ -230,7 +247,7 @@ def _plot(
                     curve.x,
                     curve.q10,
                     curve.q90,
-                    color=model_colors[model],
+                    color=color,
                     alpha=0.07,
                 )
         axis.set(
@@ -249,6 +266,157 @@ def _plot(
             bbox_inches="tight",
         )
         plt.close(figure)
+
+
+def _plot_grid(
+    summary: pd.DataFrame,
+    weights: list[str],
+    models: list[str],
+    dataset: str,
+    output: Path,
+) -> Path:
+    model_styles = [("-", "o"), ("--", "s"), ("-.", "^"), (":", "D")]
+    for weight in weights:
+        for obsolete in (
+            output / f"models_{weight}_forward_goal_1.pdf",
+            output / f"models_{weight}_forward_goal_2.pdf",
+            output / f"models_{weight}_inverse_goal_3.pdf",
+            output / f"models_{weight}_inverse_goal_4.pdf",
+            output / f"models_{weight}_forward_goals_1_2.pdf",
+            output / f"models_{weight}_inverse_goals_3_4.pdf",
+        ):
+            obsolete.unlink(missing_ok=True)
+
+    figure, axes = plt.subplots(
+        2,
+        len(weights),
+        figsize=figure_size((5 * len(weights), 8)),
+        squeeze=False,
+        sharey="row",
+    )
+    for column, weight in enumerate(weights):
+        subset_weight = summary[summary.weight == weight]
+        forward_axis, inverse_axis = axes[0, column], axes[1, column]
+        forward_axis.set_title(weight.replace("_", " ").title())
+
+        for model_index, model in enumerate(models):
+            name = publication_model_name(model)
+            linestyle, marker = model_styles[model_index % len(model_styles)]
+            empirical = subset_weight[
+                (subset_weight.model == model)
+                & (subset_weight.curve == "empirical_fcp")
+            ].sort_values("x")
+            forward_axis.plot(
+                empirical.x,
+                empirical["mean"],
+                color=EMPIRICAL_COLOR,
+                linestyle=linestyle,
+                marker=marker,
+                markevery=max(len(empirical) // 8, 1),
+                linewidth=1.7,
+            )
+            forward_axis.fill_between(
+                empirical.x,
+                empirical.q10,
+                empirical.q90,
+                color=EMPIRICAL_COLOR,
+                alpha=0.06,
+            )
+
+            for curve_name, color in (
+                ("goal3_fcp", FIXED_BETA_COLOR),
+                ("goal4_fcp", UNIFORM_BETA_COLOR),
+            ):
+                curve = subset_weight[
+                    (subset_weight.model == model)
+                    & (subset_weight.curve == curve_name)
+                ].sort_values("x")
+                inverse_axis.plot(
+                    curve.x,
+                    curve["mean"],
+                    color=color,
+                    linestyle=linestyle,
+                    marker=marker,
+                    markevery=max(len(curve) // 8, 1),
+                    linewidth=1.9,
+                )
+                inverse_axis.fill_between(
+                    curve.x,
+                    curve.q10,
+                    curve.q90,
+                    color=color,
+                    alpha=0.06,
+                )
+
+        for curve_name, color in (
+            ("goal1_bound", FIXED_ALPHA_COLOR),
+            ("goal2_bound", UNIFORM_ALPHA_COLOR),
+        ):
+            bound = subset_weight[
+                (subset_weight.model == models[0])
+                & (subset_weight.curve == curve_name)
+            ].sort_values("x")
+            forward_axis.plot(
+                bound.x, bound["mean"], color=color, linewidth=2.5
+            )
+
+        inverse_axis.plot(
+            [0, 1],
+            [0, 1],
+            color=TARGET_COLOR,
+            linestyle="--",
+            linewidth=2,
+        )
+        for axis in (forward_axis, inverse_axis):
+            axis.set_xlim(0.0, 1.0)
+            axis.set_ylim(bottom=0.0)
+            set_publication_ticks(axis)
+            axis.grid(alpha=0.25)
+        inverse_axis.set_ylim(0.0, 1.0)
+
+    middle = len(weights) // 2
+    axes[0, middle].set_xlabel(r"Miscoverage $\alpha$")
+    axes[1, middle].set_xlabel(r"Target FCP $\beta$")
+    axes[0, 0].set_ylabel("FCP / bound")
+    axes[1, 0].set_ylabel("Empirical FCP")
+
+    model_handles = [
+        Line2D(
+            [0],
+            [0],
+            color="#666666",
+            linestyle=model_styles[index % len(model_styles)][0],
+            marker=model_styles[index % len(model_styles)][1],
+            label=publication_model_name(model),
+        )
+        for index, model in enumerate(models)
+    ]
+    axes[0, -1].legend(
+        handles=[
+            Line2D([0], [0], color=EMPIRICAL_COLOR, label="Empirical FCP"),
+            Line2D([0], [0], color=FIXED_ALPHA_COLOR, linewidth=2.5, label=FIXED_ALPHA_LABEL),
+            Line2D([0], [0], color=UNIFORM_ALPHA_COLOR, linewidth=2.5, label=UNIFORM_ALPHA_LABEL),
+            *model_handles,
+        ],
+        fontsize=font_size("legend", 8),
+        ncol=2,
+    )
+    axes[1, -1].legend(
+        handles=[
+            Line2D([0], [0], color=TARGET_COLOR, linestyle="--", label=r"Target $\beta$"),
+            Line2D([0], [0], color=FIXED_BETA_COLOR, linewidth=2, label=FIXED_BETA_LABEL),
+            Line2D([0], [0], color=UNIFORM_BETA_COLOR, linewidth=2, label=UNIFORM_BETA_LABEL),
+            *model_handles,
+        ],
+        fontsize=font_size("legend", 8),
+        ncol=2,
+    )
+    figure.suptitle(publication_dataset_name(dataset))
+    figure.tight_layout()
+    destination = output / f"models_weights_2x{len(weights)}.pdf"
+    figure.savefig(destination, bbox_inches="tight")
+    plt.close(figure)
+    return destination
 
 
 def run_model_ablation(config: dict[str, Any], force: bool = False) -> None:
@@ -323,5 +491,5 @@ def run_model_ablation(config: dict[str, Any], force: bool = False) -> None:
         run.save_metrics(metrics)
         summary.to_csv(run.path / "curves_summary.csv", index=False)
         run.save_summary({"rows": len(metrics), **metrics.mean(numeric_only=True).to_dict()})
-        _plot(summary, weight_names, model_names, dataset_config["name"], run.path)
+        _plot_grid(summary, weight_names, model_names, dataset_config["name"], run.path)
         run.mark_complete()

@@ -10,7 +10,7 @@ from fcp_shift.ablations.baselines import _plot_dataset
 from fcp_shift.ablations.common import scoped_ablation_path
 from fcp_shift.ablations.corollary import _plot as _plot_corollary
 from fcp_shift.ablations.delta import _plot as _plot_delta
-from fcp_shift.ablations.models import _plot as _plot_models
+from fcp_shift.ablations.models import _plot_grid as _plot_models
 from fcp_shift.ablations.timing import _plot as _plot_timing
 from fcp_shift.ablations.weights import _plot_family as _plot_weight_family
 from fcp_shift.experiments.common import grid
@@ -63,12 +63,7 @@ def _replot_models(config: dict[str, Any]) -> list[Path]:
         for seed in config["experiment"]["seeds"]:
             run = scoped_ablation_path(_root(config), "models", seed, config, dataset)
             summary = pd.read_csv(_required(run / "curves_summary.csv"))
-            _plot_models(summary, weights, models, dataset, run)
-            generated.extend(
-                run / f"models_{weight}_{family}_goals_{goals}.pdf"
-                for weight in weights
-                for family, goals in (("forward", "1_2"), ("inverse", "3_4"))
-            )
+            generated.append(_plot_models(summary, weights, models, dataset, run))
     return generated
 
 

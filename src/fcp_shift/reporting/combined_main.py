@@ -13,9 +13,15 @@ from matplotlib.ticker import FixedLocator, FormatStrFormatter, FuncFormatter
 from .grouped import load_weight_runs
 from .labels import (
     display_dataset_name,
+    EMPIRICAL_COLOR,
+    FIXED_ALPHA_COLOR,
     FIXED_ALPHA_LABEL,
+    FIXED_BETA_COLOR,
     FIXED_BETA_LABEL,
+    TARGET_COLOR,
+    UNIFORM_ALPHA_COLOR,
     UNIFORM_ALPHA_LABEL,
+    UNIFORM_BETA_COLOR,
     UNIFORM_BETA_LABEL,
 )
 from .style import figure_size, font_size
@@ -80,12 +86,12 @@ def _plot_forward(
     show_xlabel: bool,
 ) -> None:
     alpha = arrays["alpha"]
-    _mean_line(axis, alpha, arrays["empirical_fcp"], "#111111", "Empirical FCP")
+    _mean_line(axis, alpha, arrays["empirical_fcp"], EMPIRICAL_COLOR, "Empirical FCP")
     _mean_line(
-        axis, alpha, arrays["goal1_bound"], "#0072B2", FIXED_ALPHA_LABEL
+        axis, alpha, arrays["goal1_bound"], FIXED_ALPHA_COLOR, FIXED_ALPHA_LABEL
     )
     _mean_line(
-        axis, alpha, arrays["goal2_bound"], "#D55E00", UNIFORM_ALPHA_LABEL
+        axis, alpha, arrays["goal2_bound"], UNIFORM_ALPHA_COLOR, UNIFORM_ALPHA_LABEL
     )
     axis.set_title(title, fontsize=font_size("title", _PAPER_TITLE_SIZE), pad=3)
     if show_xlabel:
@@ -124,13 +130,13 @@ def _plot_inverse(
     axis.plot(
         beta,
         beta,
-        color="#111111",
+        color=TARGET_COLOR,
         linewidth=_PAPER_LINE_WIDTH,
         linestyle="--",
         label=r"Target $\beta$",
     )
-    _mean_line(axis, beta, arrays["goal3_fcp"], "#009E73", FIXED_BETA_LABEL)
-    _mean_line(axis, beta, arrays["goal4_fcp"], "#CC79A7", UNIFORM_BETA_LABEL)
+    _mean_line(axis, beta, arrays["goal3_fcp"], FIXED_BETA_COLOR, FIXED_BETA_LABEL)
+    _mean_line(axis, beta, arrays["goal4_fcp"], UNIFORM_BETA_COLOR, UNIFORM_BETA_LABEL)
     axis.set_title(title, fontsize=font_size("title", _PAPER_TITLE_SIZE), pad=3)
     if show_xlabel:
         axis.set_xlabel(
