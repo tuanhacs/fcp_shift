@@ -42,7 +42,7 @@ def _plot(
         figsize=figure_size((15, 4 * len(datasets))),
         squeeze=False,
         sharex=True,
-        sharey=True,
+        sharey=False,
     )
     palette = plt.get_cmap("tab10")
     for row, dataset in enumerate(datasets):
