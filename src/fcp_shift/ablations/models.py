@@ -11,6 +11,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.colors import to_rgb
 from matplotlib.lines import Line2D
 
 from fcp_shift.conformal.weighted_cp import fcp_curve
@@ -275,10 +276,14 @@ def _plot_grid(
     dataset: str,
     output: Path,
 ) -> Path:
-    palette = ("#9467BD", "#8C564B", "#7F7F7F", "#BCBD22")
+    palette = ("#5E60CE", "#2A9D8F", "#B56576", "#8D6E63")
     model_colors = {
         model: palette[index % len(palette)] for index, model in enumerate(models)
     }
+
+    def light_color(color: str) -> tuple[float, float, float]:
+        rgb = np.asarray(to_rgb(color))
+        return tuple(rgb + 0.42 * (1.0 - rgb))
     for weight in weights:
         for obsolete in (
             output / f"models_{weight}_forward_goal_1.pdf",
@@ -322,9 +327,9 @@ def _plot_grid(
                 alpha=0.06,
             )
 
-            for curve_name, linestyle in (
-                ("goal3_fcp", "-"),
-                ("goal4_fcp", "--"),
+            for curve_name, color, linewidth in (
+                ("goal3_fcp", model_colors[model], 2.1),
+                ("goal4_fcp", light_color(model_colors[model]), 1.9),
             ):
                 curve = subset_weight[
                     (subset_weight.model == model)
@@ -333,15 +338,15 @@ def _plot_grid(
                 inverse_axis.plot(
                     curve.x,
                     curve["mean"],
-                    color=model_colors[model],
-                    linestyle=linestyle,
-                    linewidth=1.9,
+                    color=color,
+                    linestyle="-",
+                    linewidth=linewidth,
                 )
                 inverse_axis.fill_between(
                     curve.x,
                     curve.q10,
                     curve.q90,
-                    color=model_colors[model],
+                    color=color,
                     alpha=0.06,
                 )
 
@@ -399,8 +404,8 @@ def _plot_grid(
     axes[1, -1].legend(
         handles=[
             Line2D([0], [0], color=TARGET_COLOR, linestyle="--", label=r"Target $\beta$"),
-            Line2D([0], [0], color="#666666", linestyle="-", linewidth=2, label=FIXED_BETA_LABEL),
-            Line2D([0], [0], color="#666666", linestyle="--", linewidth=2, label=UNIFORM_BETA_LABEL),
+            Line2D([0], [0], color="#555555", linestyle="-", linewidth=2.1, label=FIXED_BETA_LABEL),
+            Line2D([0], [0], color="#AAAAAA", linestyle="-", linewidth=1.9, label=UNIFORM_BETA_LABEL),
             *model_handles,
         ],
         fontsize=font_size("legend", 8),
