@@ -65,10 +65,9 @@ def _replot_models(config: dict[str, Any]) -> list[Path]:
             summary = pd.read_csv(_required(run / "curves_summary.csv"))
             _plot_models(summary, weights, models, dataset, run)
             generated.extend(
-                run / f"models_{weight}_{family}_goal_{goal}.pdf"
+                run / f"models_{weight}_{family}_goals_{goals}.pdf"
                 for weight in weights
-                for family, goals in (("forward", (1, 2)), ("inverse", (3, 4)))
-                for goal in goals
+                for family, goals in (("forward", "1_2"), ("inverse", "3_4"))
             )
     return generated
 

@@ -23,6 +23,12 @@ from fcp_shift.data import prepare_dataset
 from fcp_shift.experiments.common import calculate_goals, grid
 from fcp_shift.models import conformity_scores, fit_model
 from fcp_shift.reporting import RunDirectory
+from fcp_shift.reporting.labels import (
+    FIXED_ALPHA_LABEL,
+    FIXED_BETA_LABEL,
+    UNIFORM_ALPHA_LABEL,
+    UNIFORM_BETA_LABEL,
+)
 from fcp_shift.reporting.style import figure_size, font_size
 from fcp_shift.reproducibility import stable_seed
 from fcp_shift.shifts import sample_covariate_shift
@@ -52,7 +58,7 @@ def _summarize_curves(curves: dict[tuple[str, str], list], alpha, beta) -> pd.Da
     return pd.DataFrame(records)
 
 
-def _plot(
+def _plot_legacy(
     summary: pd.DataFrame,
     weights: list[str],
     models: list[str],
@@ -117,6 +123,132 @@ def _plot(
             figure.tight_layout()
             figure.savefig(output / f"models_{weight}_inverse_goal_{goal}.pdf", bbox_inches="tight")
             plt.close(figure)
+
+
+def _plot(
+    summary: pd.DataFrame,
+    weights: list[str],
+    models: list[str],
+    dataset: str,
+    output: Path,
+) -> None:
+    model_colors = {
+        model: plt.get_cmap("tab10")(index) for index, model in enumerate(models)
+    }
+    for weight in weights:
+        subset_weight = summary[summary.weight == weight]
+        for obsolete in (
+            output / f"models_{weight}_forward_goal_1.pdf",
+            output / f"models_{weight}_forward_goal_2.pdf",
+            output / f"models_{weight}_inverse_goal_3.pdf",
+            output / f"models_{weight}_inverse_goal_4.pdf",
+        ):
+            obsolete.unlink(missing_ok=True)
+
+        figure, axis = plt.subplots(figsize=figure_size((8, 5)))
+        for model in models:
+            empirical = subset_weight[
+                (subset_weight.model == model)
+                & (subset_weight.curve == "empirical_fcp")
+            ].sort_values("x")
+            name = publication_model_name(model)
+            axis.plot(
+                empirical.x,
+                empirical["mean"],
+                color=model_colors[model],
+                linewidth=1.8,
+                label=f"Empirical FCP — {name}",
+            )
+            axis.fill_between(
+                empirical.x,
+                empirical.q10,
+                empirical.q90,
+                color=model_colors[model],
+                alpha=0.08,
+            )
+        for curve_name, color, linestyle, label in (
+            ("goal1_bound", "#0072B2", "--", FIXED_ALPHA_LABEL),
+            ("goal2_bound", "#D55E00", ":", UNIFORM_ALPHA_LABEL),
+        ):
+            bound = subset_weight[
+                (subset_weight.model == models[0])
+                & (subset_weight.curve == curve_name)
+            ].sort_values("x")
+            axis.plot(
+                bound.x,
+                bound["mean"],
+                color=color,
+                linestyle=linestyle,
+                linewidth=2.5,
+                label=label,
+            )
+        axis.set(
+            xlabel=r"Miscoverage $\alpha$",
+            ylabel="FCP / bound",
+            title=f"{publication_dataset_name(dataset)} — {weight}",
+        )
+        axis.set_xlim(0.0, 1.0)
+        axis.set_ylim(bottom=0.0)
+        set_publication_ticks(axis)
+        axis.grid(alpha=0.25)
+        axis.legend(fontsize=font_size("legend", 8), ncol=2)
+        figure.tight_layout()
+        figure.savefig(
+            output / f"models_{weight}_forward_goals_1_2.pdf",
+            bbox_inches="tight",
+        )
+        plt.close(figure)
+
+        figure, axis = plt.subplots(figsize=figure_size((8, 5)))
+        axis.plot(
+            [0, 1],
+            [0, 1],
+            color="black",
+            linestyle="--",
+            linewidth=2,
+            label=r"Target $\beta$",
+        )
+        for model in models:
+            name = publication_model_name(model)
+            for curve_name, linestyle, label in (
+                ("goal3_fcp", "-", FIXED_BETA_LABEL),
+                ("goal4_fcp", ":", UNIFORM_BETA_LABEL),
+            ):
+                curve = subset_weight[
+                    (subset_weight.model == model)
+                    & (subset_weight.curve == curve_name)
+                ].sort_values("x")
+                axis.plot(
+                    curve.x,
+                    curve["mean"],
+                    color=model_colors[model],
+                    linestyle=linestyle,
+                    linewidth=2,
+                    label=f"{name}: {label}",
+                )
+                axis.fill_between(
+                    curve.x,
+                    curve.q10,
+                    curve.q90,
+                    color=model_colors[model],
+                    alpha=0.07,
+                )
+        axis.set(
+            xlabel=r"Target FCP $\beta$",
+            ylabel="Empirical FCP",
+            title=f"{publication_dataset_name(dataset)} — {weight}",
+        )
+        axis.set_xlim(0.0, 1.0)
+        axis.set_ylim(0.0, 1.0)
+        set_publication_ticks(axis)
+        axis.grid(alpha=0.25)
+        axis.legend(fontsize=font_size("legend", 8), ncol=2)
+        figure.tight_layout()
+        figure.savefig(
+            output / f"models_{weight}_inverse_goals_3_4.pdf",
+            bbox_inches="tight",
+        )
+        plt.close(figure)
 
 
 def run_model_ablation(config: dict[str, Any], force: bool = False) -> None:

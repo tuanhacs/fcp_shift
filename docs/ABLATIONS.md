@@ -135,7 +135,7 @@ The runner supports:
 - linear/ridge regression or logistic regression;
 - multilayer perceptrons.
 
-For each weight, it writes separate single-axis plots for Goals 1–4. This isolates model robustness from a change in the target distribution.
+For each weight, it writes two single-axis plots: the fixed/uniform alpha guarantees are combined in `models_<weight>_forward_goals_1_2.pdf`, and the fixed/uniform beta guarantees are combined in `models_<weight>_inverse_goals_3_4.pdf`. Figure legends use the paper notation from equations 7–10 instead of Goal 1–4 names. This isolates model robustness from a change in the target distribution.
 
 ## 4. Inference-time ablation
 
