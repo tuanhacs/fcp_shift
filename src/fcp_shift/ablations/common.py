@@ -39,7 +39,7 @@ def add_dataset_row_labels(axes: np.ndarray, datasets: list[str]) -> None:
     for row, dataset in enumerate(datasets):
         axes[row, 0].annotate(
             publication_dataset_name(dataset),
-            xy=(-0.18, 0.5),
+            xy=(-0.23, 0.5),
             xycoords="axes fraction",
             rotation=90,
             ha="center",

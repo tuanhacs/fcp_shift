@@ -35,12 +35,12 @@ _RC_DEFAULTS = {key: mpl.rcParamsDefault[key] for key in _RC_KEYS}
 def _compact_tick(value: float, _position: int | None = None) -> str:
     absolute = abs(value)
     if absolute >= 1_000_000:
-        return f"{value / 1_000_000:g}M"
+        return f"{value / 1_000_000:.3f}".rstrip("0").rstrip(".") + "M"
     if absolute >= 1_000:
-        return f"{value / 1_000:g}k"
-    if 0 < absolute < 0.01:
-        return f"{value:.2g}"
-    return f"{value:g}"
+        return f"{value / 1_000:.3f}".rstrip("0").rstrip(".") + "k"
+    if 0 < absolute < 0.001:
+        return f"{value:.2e}"
+    return f"{value:.3f}".rstrip("0").rstrip(".")
 
 
 def configure_plot_style(style: PlotStyle) -> None:
@@ -104,6 +104,7 @@ def set_publication_ticks(
             axis.yaxis.set_major_locator(FixedLocator(ticks))
         else:
             axis.yaxis.set_major_locator(LinearLocator(3))
+        axis.yaxis.set_major_formatter(FuncFormatter(_compact_tick))
     else:
         values = np.unique(np.asarray(y_values, dtype=float))
         if yscale == "log":

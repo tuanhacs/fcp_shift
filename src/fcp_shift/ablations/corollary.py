@@ -53,7 +53,7 @@ def _plot(frame: pd.DataFrame, datasets: list[str], alphas: list[float], path: P
         for column, alpha in enumerate(alphas):
             axis = axes[row, column]
             subset = frame[(frame.dataset == dataset) & np.isclose(frame.alpha, alpha)]
-            axis.axhline(alpha, color="black", linewidth=2, label=rf"$\alpha={alpha:g}$")
+            axis.axhline(alpha, color="black", linewidth=2, label=r"$\alpha$")
             for index, (weight, group) in enumerate(subset.groupby("weight", sort=False)):
                 summary = group.groupby("n").estimate.agg(["mean", "std"]).reset_index()
                 color = colors.get(weight, plt.get_cmap("tab10")(index))
