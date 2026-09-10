@@ -12,10 +12,17 @@ datasets:
   #     train_fraction: 0.4,
   #   }
   # - {name: bank_marketing, source: openml, openml_id: 1461, task: classification, train_fraction: 0.4}
+  # - {
+  #     name: diamonds,
+  #     source: openml,
+  #     openml_id: 42225,
+  #     task: regression,
+  #     train_fraction: 0.4,
+  #   }
   - {
-      name: diamonds,
+      name: allstate,
       source: openml,
-      openml_id: 42225,
+      openml_id: 42571,
       task: regression,
       train_fraction: 0.4,
     }
@@ -41,7 +48,6 @@ datasets:
   #     task: classification,
   #     train_fraction: 0.4,
   #   }
-  # - {name: allstate, source: openml, openml_id: 42571, task: regression, train_fraction: 0.4}
 
 model:
   seed: 2026
