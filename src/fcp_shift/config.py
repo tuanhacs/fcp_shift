@@ -30,6 +30,7 @@ def validate_config(config: dict[str, Any]) -> None:
         "covariate_shift", "transport_shift", "asymptotic",
         "ablation_corollary", "ablation_delta", "ablation_models",
         "ablation_timing", "ablation_weights", "ablation_baselines",
+        "ablation_efficiency",
     }
     if kind not in valid_kinds:
         raise ConfigError(

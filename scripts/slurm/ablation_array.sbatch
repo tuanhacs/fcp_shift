@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=fcp-ablation
-#SBATCH --array=0-5
+#SBATCH --array=0-6
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
 #SBATCH --time=48:00:00
@@ -12,6 +12,7 @@ mkdir -p logs
 configs=(
   configs/ablation/corollary.yaml
   configs/ablation/delta.yaml
+  configs/ablation/efficiency.yaml
   configs/ablation/models.yaml
   configs/ablation/timing.yaml
   configs/ablation/weights.yaml

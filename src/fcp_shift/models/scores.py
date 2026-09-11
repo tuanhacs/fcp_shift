@@ -27,3 +27,27 @@ def conformity_scores(model, features, target, task: str, score: str | None = No
         return np.log(maximum_other / true_probability)
     raise ValueError(f"Unsupported classification score: {score}")
 
+
+def candidate_classification_scores(
+    model, features, score: str | None = None
+) -> np.ndarray:
+    """Return conformity scores for every candidate class at every feature row."""
+    probabilities = np.clip(
+        np.asarray(model.predict_proba(features), dtype=float), 1e-12, 1.0
+    )
+    score = score or "log_margin"
+    if score == "lac":
+        return 1.0 - probabilities
+    if score == "neg_log_prob":
+        return -np.log(probabilities)
+    if score == "log_margin":
+        if probabilities.shape[1] < 2:
+            return np.full_like(probabilities, -np.inf)
+        order = np.argsort(probabilities, axis=1)
+        largest = probabilities[np.arange(len(probabilities)), order[:, -1]]
+        second = probabilities[np.arange(len(probabilities)), order[:, -2]]
+        competitors = np.broadcast_to(largest[:, None], probabilities.shape).copy()
+        rows = np.arange(len(probabilities))
+        competitors[rows, order[:, -1]] = second
+        return np.log(np.clip(competitors, 1e-12, 1.0) / probabilities)
+    raise ValueError(f"Unsupported classification score: {score}")

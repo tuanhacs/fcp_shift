@@ -215,6 +215,24 @@ baseline_curves_summary.csv
 
 The full configuration covers six paper datasets and five weight families. The table reports forward and inverse pass rates and mean maximum violations for every dataset-weight pair. DKW/CoJER Monte Carlo calibration sizes are controlled in YAML. Increase them for final paper runs and keep the random seed fixed.
 
+## 7. Efficiency versus FCP bound
+
+Configuration: `configs/ablation/efficiency.yaml`
+
+```bash
+python -m fcp_shift.cli run --config configs/ablation/efficiency.yaml
+```
+
+For every target FCP bound `beta`, this appendix experiment uses Algorithm 3 with the fixed-beta guarantee to select the corresponding conformal level `alpha(beta)`. It then evaluates empirical efficiency under covariate shift. Efficiency is symmetric prediction-interval length for regression and prediction-set cardinality for classification.
+
+The output `efficiency_vs_fcp_2x3.pdf` contains three regression datasets in the top row and three classification datasets in the bottom row. Every panel contains the exponential, quadratic, and Mahalanobis oracle-weight curves. The saved `metrics.csv` includes both selected alpha and efficiency for every repetition; `efficiency_curves_summary.csv` supports plot-only regeneration:
+
+```bash
+python -m fcp_shift.cli plot \
+  --config configs/ablation/efficiency.yaml \
+  --figsize 15 7.5
+```
+
 ## Output and reproducibility
 
 Each ablation directory contains:

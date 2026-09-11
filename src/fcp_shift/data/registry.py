@@ -6,7 +6,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from sklearn.datasets import make_regression
+from sklearn.datasets import make_classification, make_regression
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
@@ -38,6 +38,16 @@ def _load_frame(dataset: dict[str, Any]) -> tuple[pd.DataFrame, pd.Series]:
             n_samples=int(dataset.get("n_samples", 5000)),
             n_features=int(dataset.get("n_features", 8)),
             noise=float(dataset.get("noise", 10.0)),
+            random_state=int(dataset.get("seed", 123)),
+        )
+        return pd.DataFrame(features), pd.Series(target)
+    if source == "synthetic_classification":
+        features, target = make_classification(
+            n_samples=int(dataset.get("n_samples", 2000)),
+            n_features=int(dataset.get("n_features", 8)),
+            n_informative=int(dataset.get("n_informative", 5)),
+            n_redundant=int(dataset.get("n_redundant", 1)),
+            n_classes=int(dataset.get("n_classes", 3)),
             random_state=int(dataset.get("seed", 123)),
         )
         return pd.DataFrame(features), pd.Series(target)

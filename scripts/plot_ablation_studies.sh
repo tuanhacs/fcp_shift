@@ -4,6 +4,7 @@ set -euo pipefail
 for config in \
   configs/ablation/corollary.yaml \
   configs/ablation/delta.yaml \
+  configs/ablation/efficiency.yaml \
   configs/ablation/models.yaml \
   configs/ablation/timing.yaml \
   configs/ablation/weights.yaml \

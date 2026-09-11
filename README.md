@@ -8,7 +8,7 @@ This repository contains reproducible implementations of the three main experime
 
 The code is a standalone Python package. It does not depend on notebook state. Every run stores its resolved configuration, environment metadata, raw results, summaries, figures, and a completion marker.
 
-The six ablation workflows—Corollary convergence, delta allocation, underlying models, inference time, weight families, and DKW/CoJER baselines—are documented in [docs/ABLATIONS.md](docs/ABLATIONS.md).
+The seven ablation workflows—Corollary convergence, delta allocation, underlying models, inference time, weight families, DKW/CoJER baselines, and efficiency versus FCP bound—are documented in [docs/ABLATIONS.md](docs/ABLATIONS.md).
 
 ## Project layout
 
@@ -212,7 +212,7 @@ python -m fcp_shift.cli plot \
   --legend-font-size 10
 ```
 
-Use `bash scripts/plot_ablation_studies.sh` to redraw all six ablations. The dedicated `figures`, `main-figure`, and ablation `plot` commands only read saved results; they do not repeat model fitting or Monte Carlo experiments.
+Use `bash scripts/plot_ablation_studies.sh` to redraw all seven ablations. The dedicated `figures`, `main-figure`, and ablation `plot` commands only read saved results; they do not repeat model fitting or Monte Carlo experiments.
 
 ## Selecting a dataset, weight, shift, or seed
 

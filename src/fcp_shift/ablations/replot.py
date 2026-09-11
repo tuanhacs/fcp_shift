@@ -10,6 +10,7 @@ from fcp_shift.ablations.baselines import _plot_dataset
 from fcp_shift.ablations.common import scoped_ablation_path
 from fcp_shift.ablations.corollary import _plot as _plot_corollary
 from fcp_shift.ablations.delta import _plot as _plot_delta
+from fcp_shift.ablations.efficiency import _plot as _plot_efficiency
 from fcp_shift.ablations.models import _plot_grid as _plot_models
 from fcp_shift.ablations.timing import _plot as _plot_timing
 from fcp_shift.ablations.weights import _plot_family as _plot_weight_family
@@ -64,6 +65,21 @@ def _replot_models(config: dict[str, Any]) -> list[Path]:
             run = scoped_ablation_path(_root(config), "models", seed, config, dataset)
             summary = pd.read_csv(_required(run / "curves_summary.csv"))
             generated.append(_plot_models(summary, weights, models, dataset, run))
+    return generated
+
+
+def _replot_efficiency(config: dict[str, Any]) -> list[Path]:
+    generated = []
+    weights = [item["name"] for item in config["weights"]]
+    columns = max(
+        sum(item["task"] == "regression" for item in config["datasets"]),
+        sum(item["task"] == "classification" for item in config["datasets"]),
+    )
+    for seed in config["experiment"]["seeds"]:
+        run = scoped_ablation_path(_root(config), "efficiency", seed, config)
+        summary = pd.read_csv(_required(run / "efficiency_curves_summary.csv"))
+        _plot_efficiency(summary, config["datasets"], weights, run)
+        generated.append(run / f"efficiency_vs_fcp_2x{columns}.pdf")
     return generated
 
 
@@ -157,6 +173,7 @@ def _replot_baselines(config: dict[str, Any]) -> list[Path]:
 REPLOTTERS: dict[str, Callable[[dict[str, Any]], list[Path]]] = {
     "ablation_corollary": _replot_corollary,
     "ablation_delta": _replot_delta,
+    "ablation_efficiency": _replot_efficiency,
     "ablation_models": _replot_models,
     "ablation_timing": _replot_timing,
     "ablation_weights": _replot_weights,
