@@ -12,7 +12,6 @@ import numpy as np
 import pandas as pd
 
 from fcp_shift.ablations.common import (
-    add_dataset_row_labels,
     prepare_scored_problem,
     scoped_ablation_path,
     set_publication_ticks,
@@ -101,10 +100,9 @@ def _plot(
             axis.grid(alpha=0.25)
             if row == 0 and column == 2:
                 axis.legend(fontsize=font_size("legend", 8))
-    add_dataset_row_labels(axes, datasets)
     axes[-1, 0].set_xlabel(r"Calibration size $n$")
-    figure.supylabel(r"Estimated $G(\alpha+\Delta)+\epsilon$")
-    figure.tight_layout(rect=(0.06, 0.05, 1.0, 1.0))
+    axes[-1, 0].set_ylabel(r"Estimated $G(\alpha+\Delta)+\epsilon$")
+    figure.tight_layout(rect=(0.02, 0.05, 1.0, 1.0))
     figure.savefig(output_path, bbox_inches="tight")
     plt.close(figure)
 
