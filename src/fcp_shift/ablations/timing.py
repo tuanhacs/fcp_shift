@@ -18,7 +18,6 @@ from fcp_shift.conformal import (
     estimate_g_inverse_algorithm2,
 )
 from fcp_shift.ablations.common import (
-    add_dataset_row_labels,
     publication_model_name,
     scoped_ablation_path,
     set_publication_ticks,
@@ -47,11 +46,21 @@ def _plot(frame: pd.DataFrame, datasets: list[str], models: list[str], path: Pat
         for column, model in enumerate(models):
             axis = axes[row, column]
             subset = frame[(frame.dataset == dataset) & (frame.model == model)]
-            for family, color in [("goals_1_2", "#0072B2"), ("goals_3_4", "#D55E00")]:
+            families = [
+                ("goals_1_2", "#0072B2", "A, B"),
+                ("goals_3_4", "#D55E00", "C, D"),
+            ]
+            for family, color, display_label in families:
                 group = subset[subset.family == family]
                 summary = group.groupby("n").seconds.agg(["median", lambda x: x.quantile(0.1), lambda x: x.quantile(0.9)]).reset_index()
                 summary.columns = ["n", "median", "q10", "q90"]
-                axis.plot(summary.n, summary["median"], marker="o", color=color, label=family)
+                axis.plot(
+                    summary.n,
+                    summary["median"],
+                    marker="o",
+                    color=color,
+                    label=display_label,
+                )
                 axis.fill_between(summary.n, summary.q10, summary.q90, color=color, alpha=0.12)
             set_publication_ticks(
                 axis,
@@ -65,10 +74,9 @@ def _plot(frame: pd.DataFrame, datasets: list[str], models: list[str], path: Pat
             axis.grid(alpha=0.25)
             if row == 0 and column == len(models) - 1:
                 axis.legend(fontsize=font_size("legend", 8))
-    add_dataset_row_labels(axes, datasets)
-    figure.supxlabel(r"Calibration size $n$")
-    figure.supylabel("Wall time (seconds)")
-    figure.tight_layout(rect=(0.06, 0.05, 1.0, 1.0))
+    axes[-1, 0].set_xlabel(r"Calibration size $n$")
+    axes[-1, 0].set_ylabel("Inference time (s)")
+    figure.tight_layout()
     figure.savefig(path, bbox_inches="tight")
     plt.close(figure)
 
