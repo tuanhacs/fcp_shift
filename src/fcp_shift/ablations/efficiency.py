@@ -123,9 +123,10 @@ def _plot(
             axis.set_ylim(bottom=0.0)
             set_publication_ticks(axis)
             axis.grid(alpha=0.25)
-    axes[0, 0].set_ylabel("Average Size")
+    # axes[0, 0].set_ylabel("Average Size")
     axes[1, 0].set_ylabel("Average Size")
-    figure.supxlabel(r"Target FCP bound $\beta$")
+    axes[1, 0].set_xlabel(r"Target FCP bound $\beta$")
+    # figure.supxlabel(r"Target FCP bound $\beta$")
     legend_axis = axes[0, len(by_task["regression"]) - 1]
     legend_axis.legend(fontsize=font_size("legend", 8))
     figure.tight_layout(rect=(0.0, 0.04, 1.0, 1.0))
