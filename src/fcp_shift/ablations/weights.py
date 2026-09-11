@@ -136,6 +136,134 @@ def _plot_family(
     plt.close(figure)
 
 
+def _weight_curve_mean_std(
+    curves: dict[tuple[str, str, str], dict[str, np.ndarray]] | pd.DataFrame,
+    shift: str,
+    dataset: str,
+    weight: str,
+    curve_name: str,
+) -> tuple[np.ndarray, np.ndarray]:
+    if isinstance(curves, pd.DataFrame):
+        summary = curves[
+            (curves["shift"] == shift)
+            & (curves["dataset"] == dataset)
+            & (curves["weight"] == weight)
+            & (curves["curve"] == curve_name)
+        ].sort_values("x")
+        if summary.empty:
+            raise ValueError(
+                f"Missing saved curve for {shift}/{dataset}/{weight}/{curve_name}"
+            )
+        return (
+            summary["mean"].to_numpy(dtype=float),
+            summary["std"].fillna(0.0).to_numpy(dtype=float),
+        )
+    values = curves[(shift, dataset, weight)][curve_name]
+    mean = values.mean(axis=0)
+    std = values.std(axis=0, ddof=1) if values.shape[0] > 1 else np.zeros_like(mean)
+    return mean, std
+
+
+def _plot_grid(
+    curves: dict[tuple[str, str, str], dict[str, np.ndarray]] | pd.DataFrame,
+    datasets: list[str],
+    weights: list[str],
+    alpha: np.ndarray,
+    beta: np.ndarray,
+    output_directory: Path,
+) -> list[Path]:
+    definitions = (
+        ("goal1_bound", alpha, FIXED_ALPHA_LABEL, r"Nominal $\alpha$"),
+        ("goal2_bound", alpha, UNIFORM_ALPHA_LABEL, r"Nominal $\alpha$"),
+        ("goal3_fcp", beta, FIXED_BETA_LABEL, r"Target $\beta$"),
+        ("goal4_fcp", beta, UNIFORM_BETA_LABEL, r"Target $\beta$"),
+    )
+    shifts = (
+        ("covariate_shift", "Covariate Shift"),
+        ("score_transport_shift", "Score-Transport Shift"),
+    )
+    for obsolete in (
+        "weights_covariate_forward_goals_1_2.pdf",
+        "weights_covariate_inverse_goals_3_4.pdf",
+        "weights_transport_forward_goals_1_2.pdf",
+        "weights_transport_inverse_goals_3_4.pdf",
+    ):
+        (output_directory / obsolete).unlink(missing_ok=True)
+
+    generated: list[Path] = []
+    for dataset in datasets:
+        figure, axes = plt.subplots(
+            2,
+            4,
+            figsize=figure_size((18, 7)),
+            squeeze=False,
+            sharex=False,
+            sharey=False,
+        )
+        for row, (shift, row_label) in enumerate(shifts):
+            for column, (curve_name, x, title, reference_label) in enumerate(
+                definitions
+            ):
+                axis = axes[row, column]
+                axis.plot(
+                    x,
+                    x,
+                    color="black",
+                    linestyle="--",
+                    linewidth=2,
+                    label=reference_label,
+                )
+                for index, weight in enumerate(weights):
+                    mean, std = _weight_curve_mean_std(
+                        curves, shift, dataset, weight, curve_name
+                    )
+                    color = WEIGHT_COLORS.get(weight, plt.get_cmap("tab10")(index))
+                    axis.fill_between(
+                        x,
+                        np.clip(mean - std, 0.0, 1.0),
+                        np.clip(mean + std, 0.0, 1.0),
+                        color=color,
+                        alpha=0.10,
+                        linewidth=0,
+                    )
+                    axis.plot(x, mean, color=color, linewidth=2, label=weight)
+                if row == 0:
+                    axis.set_title(title)
+                axis.set_xlim(0.0, 1.0)
+                axis.set_ylim(0.0, 1.0)
+                set_publication_ticks(axis)
+                axis.grid(alpha=0.25)
+            axes[row, 0].annotate(
+                row_label,
+                xy=(-0.28, 0.5),
+                xycoords="axes fraction",
+                rotation=90,
+                ha="center",
+                va="center",
+                fontweight="bold",
+            )
+
+        axes[1, 0].set_xlabel(r"Miscoverage $\alpha$")
+        axes[1, 2].set_xlabel(r"Target FCP $\beta$")
+        axes[0, 0].set_ylabel("FCP bound")
+        axes[1, 0].set_ylabel("FCP bound")
+        axes[0, 2].set_ylabel("Empirical FCP")
+        axes[1, 2].set_ylabel("Empirical FCP")
+        axes[0, 0].legend(fontsize=font_size("legend", 8), ncol=2)
+        axes[0, 2].legend(fontsize=font_size("legend", 8), ncol=2)
+        figure.tight_layout(rect=(0.035, 0.02, 1.0, 1.0))
+        filename = (
+            "weights_2x4.pdf"
+            if len(datasets) == 1
+            else f"weights_{dataset}_2x4.pdf"
+        )
+        destination = output_directory / filename
+        figure.savefig(destination, bbox_inches="tight")
+        plt.close(figure)
+        generated.append(destination)
+    return generated
+
+
 def _curve_records(
     arrays: dict[str, np.ndarray],
     shift: str,
@@ -341,28 +469,5 @@ def run_weight_ablation(config: dict[str, Any], force: bool = False) -> None:
                 **metrics.mean(numeric_only=True).to_dict(),
             }
         )
-        for shift, prefix in (
-            ("covariate_shift", "covariate"),
-            ("score_transport_shift", "transport"),
-        ):
-            _plot_family(
-                curves,
-                datasets,
-                weights,
-                shift,
-                "forward",
-                alpha,
-                beta,
-                run.path / f"weights_{prefix}_forward_goals_1_2.pdf",
-            )
-            _plot_family(
-                curves,
-                datasets,
-                weights,
-                shift,
-                "inverse",
-                alpha,
-                beta,
-                run.path / f"weights_{prefix}_inverse_goals_3_4.pdf",
-            )
+        _plot_grid(curves, datasets, weights, alpha, beta, run.path)
         run.mark_complete()

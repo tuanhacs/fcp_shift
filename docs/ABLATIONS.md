@@ -168,15 +168,14 @@ The workflow compares five weight families in both Covariate Shift and Score-Tra
 - positive linear (new);
 - sigmoid (new).
 
-For each setting it produces one forward figure for the fixed/uniform alpha guarantees and one inverse figure for the fixed/uniform beta guarantees. Each panel contains the usual black nominal line and one mean curve with a standard-deviation band for every weight. This gives exactly four figures:
+For each dataset it produces one `2 x 4` figure. The top row is Covariate Shift and the bottom row is Score-Transport Shift. Columns are the fixed-alpha, uniform-alpha, fixed-beta, and uniform-beta quantities from equations 7–10. Each panel contains the usual black reference line and one mean curve with a standard-deviation band for every weight. With a single configured dataset, the output is:
 
 ```text
 outputs/ablations/weight_families/seed_<seed>/
-weights_covariate_forward_goals_1_2.pdf
-weights_covariate_inverse_goals_3_4.pdf
-weights_transport_forward_goals_1_2.pdf
-weights_transport_inverse_goals_3_4.pdf
+weights_2x4.pdf
 ```
+
+When multiple datasets are configured, one `weights_<dataset>_2x4.pdf` file is written per dataset.
 
 Each family defines its corresponding shifted target distribution; this fact is explicitly recorded in `metadata.json`. The STS experiment uses the configured `rho` and estimates the required transport map with Algorithm 1.
 

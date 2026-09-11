@@ -13,7 +13,7 @@ from fcp_shift.ablations.delta import _plot as _plot_delta
 from fcp_shift.ablations.efficiency import _plot as _plot_efficiency
 from fcp_shift.ablations.models import _plot_grid as _plot_models
 from fcp_shift.ablations.timing import _plot as _plot_timing
-from fcp_shift.ablations.weights import _plot_family as _plot_weight_family
+from fcp_shift.ablations.weights import _plot_grid as _plot_weight_grid
 from fcp_shift.experiments.common import grid
 
 
@@ -105,26 +105,9 @@ def _replot_weights(config: dict[str, Any]) -> list[Path]:
     for seed in config["experiment"]["seeds"]:
         run = scoped_ablation_path(_root(config), "weight_families", seed, config)
         summary = pd.read_csv(_required(run / "weight_curves_summary.csv"))
-        for shift, prefix in (
-            ("covariate_shift", "covariate"),
-            ("score_transport_shift", "transport"),
-        ):
-            for family, suffix in (
-                ("forward", "forward_goals_1_2"),
-                ("inverse", "inverse_goals_3_4"),
-            ):
-                output = run / f"weights_{prefix}_{suffix}.pdf"
-                _plot_weight_family(
-                    summary,
-                    datasets,
-                    weights,
-                    shift,
-                    family,
-                    alpha,
-                    beta,
-                    output,
-                )
-                generated.append(output)
+        generated.extend(
+            _plot_weight_grid(summary, datasets, weights, alpha, beta, run)
+        )
     return generated
 
 

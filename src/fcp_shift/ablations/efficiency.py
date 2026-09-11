@@ -104,14 +104,14 @@ def _plot(
                 if curve.empty:
                     raise ValueError(f"Missing efficiency curve for {dataset}/{weight}")
                 color = WEIGHT_COLORS.get(weight, plt.get_cmap("tab10")(index))
-                axis.fill_between(
-                    curve.beta,
-                    np.maximum(curve["mean"] - curve["std"].fillna(0.0), 0.0),
-                    curve["mean"] + curve["std"].fillna(0.0),
-                    color=color,
-                    alpha=0.10,
-                    linewidth=0,
-                )
+                # axis.fill_between(
+                #     curve.beta,
+                #     np.maximum(curve["mean"] - curve["std"].fillna(0.0), 0.0),
+                #     curve["mean"] + curve["std"].fillna(0.0),
+                #     color=color,
+                #     alpha=0.10,
+                #     linewidth=0,
+                # )
                 axis.plot(
                     curve.beta,
                     curve["mean"],
@@ -123,8 +123,8 @@ def _plot(
             axis.set_ylim(bottom=0.0)
             set_publication_ticks(axis)
             axis.grid(alpha=0.25)
-    axes[0, 0].set_ylabel("Average interval length")
-    axes[1, 0].set_ylabel("Average prediction-set size")
+    axes[0, 0].set_ylabel("Average Size")
+    axes[1, 0].set_ylabel("Average Size")
     figure.supxlabel(r"Target FCP bound $\beta$")
     legend_axis = axes[0, len(by_task["regression"]) - 1]
     legend_axis.legend(fontsize=font_size("legend", 8))
