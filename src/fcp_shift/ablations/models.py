@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.colors import to_rgb
 from matplotlib.lines import Line2D
+from matplotlib.ticker import FuncFormatter
 
 from fcp_shift.conformal.weighted_cp import fcp_curve
 from fcp_shift.ablations.common import (
@@ -37,7 +38,7 @@ from fcp_shift.reporting.labels import (
     UNIFORM_BETA_COLOR,
     UNIFORM_BETA_LABEL,
 )
-from fcp_shift.reporting.style import figure_size, font_size
+from fcp_shift.reporting.style import compact_tick_label, figure_size, font_size
 from fcp_shift.reproducibility import stable_seed
 from fcp_shift.shifts import sample_covariate_shift
 from fcp_shift.weights import fit_weight
@@ -373,6 +374,13 @@ def _plot_grid(
             axis.set_xlim(0.0, 1.0)
             axis.set_ylim(0.0, 1.0)
             set_publication_ticks(axis)
+            axis.yaxis.set_major_formatter(
+                FuncFormatter(
+                    lambda value, position: ""
+                    if np.isclose(value, 0.0)
+                    else compact_tick_label(value, position)
+                )
+            )
             axis.grid(alpha=0.25)
 
     middle = len(weights) // 2
