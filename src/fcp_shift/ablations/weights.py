@@ -9,6 +9,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.lines import Line2D
+from matplotlib.ticker import FuncFormatter
 
 from fcp_shift.ablations.common import (
     add_dataset_row_labels,
@@ -24,7 +26,7 @@ from fcp_shift.reporting.labels import (
     UNIFORM_ALPHA_LABEL,
     UNIFORM_BETA_LABEL,
 )
-from fcp_shift.reporting.style import figure_size, font_size
+from fcp_shift.reporting.style import compact_tick_label, figure_size, font_size
 from fcp_shift.reproducibility import stable_seed
 from fcp_shift.shifts import build_score_transport, sample_covariate_shift
 from fcp_shift.weights import fit_weight
@@ -173,10 +175,10 @@ def _plot_grid(
     output_directory: Path,
 ) -> list[Path]:
     definitions = (
-        ("goal1_bound", alpha, FIXED_ALPHA_LABEL, r"Nominal $\alpha$"),
-        ("goal2_bound", alpha, UNIFORM_ALPHA_LABEL, r"Nominal $\alpha$"),
-        ("goal3_fcp", beta, FIXED_BETA_LABEL, r"Target $\beta$"),
-        ("goal4_fcp", beta, UNIFORM_BETA_LABEL, r"Target $\beta$"),
+        ("goal1_bound", alpha, FIXED_ALPHA_LABEL, r"Nominal $\alpha$", "--"),
+        ("goal2_bound", alpha, UNIFORM_ALPHA_LABEL, r"Nominal $\alpha$", "--"),
+        ("goal3_fcp", beta, FIXED_BETA_LABEL, r"Target $\beta$", ":"),
+        ("goal4_fcp", beta, UNIFORM_BETA_LABEL, r"Target $\beta$", ":"),
     )
     shifts = (
         ("covariate_shift", "Covariate Shift"),
@@ -201,15 +203,19 @@ def _plot_grid(
             sharey=False,
         )
         for row, (shift, row_label) in enumerate(shifts):
-            for column, (curve_name, x, title, reference_label) in enumerate(
-                definitions
-            ):
+            for column, (
+                curve_name,
+                x,
+                title,
+                reference_label,
+                reference_style,
+            ) in enumerate(definitions):
                 axis = axes[row, column]
                 axis.plot(
                     x,
                     x,
                     color="black",
-                    linestyle="--",
+                    linestyle=reference_style,
                     linewidth=2,
                     label=reference_label,
                 )
@@ -232,6 +238,13 @@ def _plot_grid(
                 axis.set_xlim(0.0, 1.0)
                 axis.set_ylim(0.0, 1.0)
                 set_publication_ticks(axis)
+                axis.yaxis.set_major_formatter(
+                    FuncFormatter(
+                        lambda value, position: ""
+                        if np.isclose(value, 0.0)
+                        else compact_tick_label(value, position)
+                    )
+                )
                 axis.grid(alpha=0.25)
             axes[row, 0].annotate(
                 row_label,
@@ -249,9 +262,35 @@ def _plot_grid(
         axes[1, 0].set_ylabel("FCP bound")
         axes[0, 2].set_ylabel("Empirical FCP")
         axes[1, 2].set_ylabel("Empirical FCP")
-        axes[0, 0].legend(fontsize=font_size("legend", 8), ncol=2)
-        axes[0, 2].legend(fontsize=font_size("legend", 8), ncol=2)
-        figure.tight_layout(rect=(0.035, 0.02, 1.0, 1.0))
+        legend_handles = [
+            Line2D(
+                [0], [0], color="black", linestyle="--", linewidth=2,
+                label=r"Nominal $\alpha$",
+            ),
+            Line2D(
+                [0], [0], color="black", linestyle=":", linewidth=2,
+                label=r"Target $\beta$",
+            ),
+            *[
+                Line2D(
+                    [0],
+                    [0],
+                    color=WEIGHT_COLORS.get(weight, plt.get_cmap("tab10")(index)),
+                    linewidth=2,
+                    label=weight,
+                )
+                for index, weight in enumerate(weights)
+            ],
+        ]
+        figure.legend(
+            handles=legend_handles,
+            loc="upper center",
+            bbox_to_anchor=(0.5, 1.015),
+            ncol=len(legend_handles),
+            fontsize=font_size("legend", 8),
+            frameon=True,
+        )
+        figure.tight_layout(rect=(0.035, 0.02, 1.0, 0.91))
         filename = (
             "weights_2x4.pdf"
             if len(datasets) == 1
