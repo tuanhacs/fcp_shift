@@ -27,6 +27,12 @@ from fcp_shift.data import prepare_dataset
 from fcp_shift.experiments.common import grid
 from fcp_shift.models import conformity_scores, fit_model
 from fcp_shift.reporting import RunDirectory
+from fcp_shift.reporting.labels import (
+    FIXED_ALPHA_LABEL,
+    FIXED_BETA_LABEL,
+    UNIFORM_ALPHA_LABEL,
+    UNIFORM_BETA_LABEL,
+)
 from fcp_shift.reporting.style import figure_size, font_size
 from fcp_shift.reproducibility import stable_seed
 from fcp_shift.weights import fit_weight
@@ -47,8 +53,16 @@ def _plot(frame: pd.DataFrame, datasets: list[str], models: list[str], path: Pat
             axis = axes[row, column]
             subset = frame[(frame.dataset == dataset) & (frame.model == model)]
             families = [
-                ("goals_1_2", "#0072B2", "A, B"),
-                ("goals_3_4", "#D55E00", "C, D"),
+                (
+                    "goals_1_2",
+                    "#0072B2",
+                    f"{FIXED_ALPHA_LABEL}, {UNIFORM_ALPHA_LABEL}",
+                ),
+                (
+                    "goals_3_4",
+                    "#D55E00",
+                    f"{FIXED_BETA_LABEL}, {UNIFORM_BETA_LABEL}",
+                ),
             ]
             for family, color, display_label in families:
                 group = subset[subset.family == family]
