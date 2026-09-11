@@ -32,7 +32,7 @@ _RC_KEYS = (
 _RC_DEFAULTS = {key: mpl.rcParamsDefault[key] for key in _RC_KEYS}
 
 
-def _compact_tick(value: float, _position: int | None = None) -> str:
+def compact_tick_label(value: float, _position: int | None = None) -> str:
     absolute = abs(value)
     if absolute >= 1_000_000:
         return f"{value / 1_000_000:.3f}".rstrip("0").rstrip(".") + "M"
@@ -96,7 +96,7 @@ def set_publication_ticks(
         else:
             ticks = values[np.rint(np.linspace(0, len(values) - 1, 3)).astype(int)]
         axis.set_xticks(ticks)
-        axis.xaxis.set_major_formatter(FuncFormatter(_compact_tick))
+        axis.xaxis.set_major_formatter(FuncFormatter(compact_tick_label))
     if y_values is None:
         if yscale == "log":
             low, high = axis.get_ylim()
@@ -104,7 +104,7 @@ def set_publication_ticks(
             axis.yaxis.set_major_locator(FixedLocator(ticks))
         else:
             axis.yaxis.set_major_locator(LinearLocator(3))
-        axis.yaxis.set_major_formatter(FuncFormatter(_compact_tick))
+        axis.yaxis.set_major_formatter(FuncFormatter(compact_tick_label))
     else:
         values = np.unique(np.asarray(y_values, dtype=float))
         if yscale == "log":
@@ -114,5 +114,5 @@ def set_publication_ticks(
         else:
             ticks = values[np.rint(np.linspace(0, len(values) - 1, 3)).astype(int)]
         axis.yaxis.set_major_locator(FixedLocator(ticks))
-        axis.yaxis.set_major_formatter(FuncFormatter(_compact_tick))
+        axis.yaxis.set_major_formatter(FuncFormatter(compact_tick_label))
     axis.minorticks_off()

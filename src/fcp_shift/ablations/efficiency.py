@@ -10,6 +10,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.ticker import FuncFormatter
 
 from fcp_shift.ablations.common import (
     prepare_scored_problem,
@@ -22,7 +23,7 @@ from fcp_shift.conformal.bounds import fixed_constants
 from fcp_shift.experiments.common import grid
 from fcp_shift.models import candidate_classification_scores
 from fcp_shift.reporting import RunDirectory
-from fcp_shift.reporting.style import figure_size, font_size
+from fcp_shift.reporting.style import compact_tick_label, figure_size, font_size
 from fcp_shift.reproducibility import stable_seed
 from fcp_shift.shifts import sample_covariate_shift
 from fcp_shift.weights import fit_weight
@@ -122,6 +123,13 @@ def _plot(
             axis.set_xlim(0.0, 1.0)
             axis.set_ylim(bottom=0.0)
             set_publication_ticks(axis)
+            axis.yaxis.set_major_formatter(
+                FuncFormatter(
+                    lambda value, position: ""
+                    if np.isclose(value, 0.0)
+                    else compact_tick_label(value, position)
+                )
+            )
             axis.grid(alpha=0.25)
     # axes[0, 0].set_ylabel("Average Size")
     axes[1, 0].set_ylabel("Average Size")
