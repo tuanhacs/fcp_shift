@@ -27,6 +27,18 @@ from fcp_shift.weights import fit_weight
 LOGGER = logging.getLogger(__name__)
 
 
+def _allocation_display_label(label: str, bound_type: str) -> str:
+    """Render stored allocation names using the notation from the bounds."""
+    if label == "optimized":
+        return "Optimized"
+    prefix, value = label.split("=", maxsplit=1)
+    if bound_type == "fixed" and prefix == "cal":
+        return rf"$\delta_{{\mathrm{{cal}}}}={value}\delta$"
+    if bound_type == "uniform" and prefix == "side":
+        return rf"$\delta_+=\delta_-={value}\delta$"
+    return label
+
+
 def _plot(
     frame: pd.DataFrame, datasets: list[str], bound_type: str, output_path: Path
 ) -> None:
@@ -54,6 +66,11 @@ def _plot(
                 & (frame.bound_type == bound_type)
             ]
             labels = list(dict.fromkeys(subset.allocation.tolist()))
+            # Draw the minimizing allocation last so that it remains visible when
+            # several curves nearly coincide asymptotically.
+            labels = [label for label in labels if label != "optimized"] + [
+                label for label in labels if label == "optimized"
+            ]
             for index, label in enumerate(labels):
                 group = subset[subset.allocation == label]
                 summary = group.groupby("x").bound.agg(["mean", "std"]).reset_index()
@@ -65,7 +82,8 @@ def _plot(
                     marker="o",
                     linewidth=2.5 if optimized else 1.8,
                     color=color,
-                    label=label,
+                    label=_allocation_display_label(label, bound_type),
+                    zorder=5 if optimized else 2,
                 )
                 axis.fill_between(
                     summary.x,
@@ -73,6 +91,7 @@ def _plot(
                     summary["mean"] + summary["std"].fillna(0.0),
                     color=color,
                     alpha=0.10,
+                    zorder=4 if optimized else 1,
                 )
             if row == 0:
                 axis.set_title(titles[path_name])
@@ -83,7 +102,7 @@ def _plot(
             if row == 0 and column == 2:
                 axis.legend(fontsize=font_size("legend", 8))
     add_dataset_row_labels(axes, datasets)
-    figure.supxlabel("Increasing sample size")
+    axes[-1, 0].set_xlabel(r"Calibration size $n$")
     figure.supylabel(r"Estimated $G(\alpha+\Delta)+\epsilon$")
     figure.tight_layout(rect=(0.06, 0.05, 1.0, 1.0))
     figure.savefig(output_path, bbox_inches="tight")
