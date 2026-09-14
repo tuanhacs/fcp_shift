@@ -10,6 +10,7 @@ from fcp_shift.data import PreparedDataset, prepare_dataset
 from fcp_shift.models import conformity_scores, fit_model
 from fcp_shift.reporting.labels import display_dataset_name
 from fcp_shift.reporting.style import set_publication_ticks
+from fcp_shift.weights import direction_variant
 
 
 @dataclass
@@ -77,6 +78,18 @@ def scoped_ablation_path(
     root: Path, name: str, seed: int, config: dict[str, Any], *parts: str
 ) -> Path:
     path = root / "ablations" / name
+    variants = {
+        item["name"]: direction_variant(item)
+        for item in config.get("weights", [])
+        if direction_variant(item) is not None
+    }
+    if variants:
+        if len(variants) == len(config.get("weights", [])) and len(set(variants.values())) == 1:
+            path /= next(iter(variants.values()))
+        else:
+            from fcp_shift.reproducibility import stable_seed
+
+            path /= f"direction_mix_{stable_seed(sorted(variants.items()))}"
     for part in parts:
         path /= part
     filters = config.get("_filters", {})

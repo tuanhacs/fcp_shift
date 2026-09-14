@@ -68,13 +68,15 @@ bash scripts/run_covariate_shift.sh
 
 Under oracle covariate shift, Goals 1–4 use the identity upper bound `G(eta) <= eta`. The implementation does not re-estimate `G` in this experiment.
 
+The exponential tilt is fitted on an independent auxiliary subset (`shift.auxiliary_fraction`, default `0.2`) rather than on calibration/test scores. The resulting feature-only weight is clipped and normalized on the source pool; test pairs are resampled in proportion to this weight. Rerun older output directories with `--force` after this change, since saved curves use the previous shift construction.
+
 ### Stratified score-transport shift
 
 ```bash
 bash scripts/run_transport_shift.sh
 ```
 
-The transport runner constructs score strata, applies the conditional mixture shift, uses the exact score-transport weight, and explicitly uses Algorithm 1 to estimate `G`. Algorithms 2 and 3 are used for the inverse Goals 3–4. The estimator choice is written to `metadata.json`; it is not controlled by mutable global notebook state.
+The transport runner fits an auxiliary Ridge projection of score on features, freezes quantile cutpoints from the auxiliary features, and defines strata as `g(X)` on the source pool. It draws a target covariate stratum using the exponential-tilt stratum masses and, with probability `rho`, replaces the selected point's score with a score drawn from the next stratum. At `rho=0`, this is covariate shift with a *stratum-coarsened* exponential weight, not the pointwise weight of the separate covariate runner. The resulting score-transport weight is `((1-rho)*q[h] + rho*q[pi_inverse(h)])/p[h]`; Algorithm 1 estimates `G`. The experiment evaluates score-level FCP and does not synthesize new target labels `Y` for transported scores. Older outputs require `--force` to be recomputed.
 
 ### Asymptotic study
 
@@ -213,6 +215,25 @@ python -m fcp_shift.cli plot \
 ```
 
 Use `bash scripts/plot_ablation_studies.sh` to redraw all seven ablations. The dedicated `figures`, `main-figure`, and ablation `plot` commands only read saved results; they do not repeat model fitting or Monte Carlo experiments.
+
+## Choosing the weight direction
+
+Each weight can use either a score-informed Ridge direction (`ridge`, the default) or a seeded random direction (`random`) to form its scalar projection of the features. The weight formula, clipping, and mean-one normalization are unchanged. Set `direction` and `direction_seed` on a YAML weight entry:
+
+```yaml
+weights:
+  - {name: exponential, strength: 0.35, clip_quantile: 0.995, direction: random, direction_seed: 2026}
+```
+
+Or override every configured weight from the CLI without editing YAML:
+
+```bash
+python -m fcp_shift.cli run --config configs/main/covariate_shift.yaml --weight-direction random --direction-seed 2026
+python -m fcp_shift.cli run --config configs/main/transport_shift.yaml --weight-direction random --direction-seed 2026
+python -m fcp_shift.cli main-figure --weight exponential --rho 0.5 --weight-direction random --direction-seed 2026
+```
+
+Use the same direction options with `figures` or ablation `plot` to read the corresponding saved results. Random-direction results are stored in `direction_random_seed_<seed>` subdirectories, so they do not overwrite existing Ridge runs. Ridge continues to use the original output paths. On the main shift experiments, the random direction is independent of scores; auxiliary features are used only to center/scale the projection and define STS strata. Older ablations that do not have an independent auxiliary split also support `random`, with source features used only for projection scaling.
 
 ## Selecting a dataset, weight, shift, or seed
 

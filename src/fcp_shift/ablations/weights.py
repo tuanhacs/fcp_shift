@@ -14,7 +14,6 @@ from matplotlib.ticker import FuncFormatter
 
 from fcp_shift.ablations.common import (
     add_dataset_row_labels,
-    prepare_scored_problem,
     scoped_ablation_path,
     set_publication_ticks,
 )
@@ -28,8 +27,10 @@ from fcp_shift.reporting.labels import (
 )
 from fcp_shift.reporting.style import compact_tick_label, figure_size, font_size
 from fcp_shift.reproducibility import stable_seed
-from fcp_shift.shifts import build_score_transport, sample_covariate_shift
-from fcp_shift.weights import fit_weight
+from fcp_shift.shifts import (
+    build_score_transport, prepare_shift_problem, sample_covariate_shift,
+)
+from fcp_shift.weights import fit_score_projection, fit_weight
 
 
 WEIGHT_COLORS = {
@@ -355,6 +356,7 @@ def run_weight_ablation(config: dict[str, Any], force: bool = False) -> None:
     eta = float(config["fcp"].get("eta", 1e-10))
     strata = int(config.get("transport", {}).get("strata", 5))
     rho = float(config.get("transport", {}).get("rho", 0.5))
+    auxiliary_fraction = float(config.get("shift", {}).get("auxiliary_fraction", 0.2))
     datasets = [item["name"] for item in config["datasets"]]
     weights = [item["name"] for item in config["weights"]]
 
@@ -372,6 +374,8 @@ def run_weight_ablation(config: dict[str, Any], force: bool = False) -> None:
                 "transport_rho": rho,
                 "transport_strata": strata,
                 "target_distribution_varies_by_weight_family": True,
+                "stratification": "auxiliary_score_projection_of_X",
+                "auxiliary_fraction": auxiliary_fraction,
             },
         )
         curves: dict[tuple[str, str, str], dict[str, np.ndarray]] = {}
@@ -379,17 +383,34 @@ def run_weight_ablation(config: dict[str, Any], force: bool = False) -> None:
         curve_rows: list[dict[str, Any]] = []
 
         for dataset_config in config["datasets"]:
-            problem = prepare_scored_problem(dataset_config, config["model"])
+            problem = prepare_shift_problem(
+                dataset_config, config["model"], auxiliary_fraction
+            )
             dataset = dataset_config["name"]
+            projections = {}
             for weight_config in config["weights"]:
+                ridge = float(weight_config.get("ridge", 1e-3))
+                direction = weight_config.get("direction", "ridge")
+                direction_seed = int(weight_config.get("direction_seed", 2026))
+                key = (ridge, direction, direction_seed)
+                if key not in projections:
+                    projections[key] = fit_score_projection(
+                        problem.dataset.x_train, problem.auxiliary_features,
+                        problem.auxiliary_scores, ridge,
+                        method=direction, random_seed=direction_seed,
+                    )
+                projection = projections[key]
                 base_weight = fit_weight(
                     weight_config,
                     problem.dataset.x_train,
                     problem.dataset.x_source,
-                    problem.scores,
+                    problem.source_scores,
+                    score_projection=projection,
                 )
                 transport = build_score_transport(
-                    problem.scores, base_weight.values, strata
+                    problem.source_scores, base_weight.values, strata,
+                    stratification_values=projection.transform(problem.dataset.x_source),
+                    reference_values=projection.transform(problem.auxiliary_features),
                 )
                 transport_weights = transport.weights(rho)
                 results_by_shift = {
@@ -409,12 +430,12 @@ def run_weight_ablation(config: dict[str, Any], force: bool = False) -> None:
                         )
                     )
                     calibration, test = sample_covariate_shift(
-                        len(problem.scores), base_weight.values, n, m, cov_rng
+                        len(problem.source_scores), base_weight.values, n, m, cov_rng
                     )
                     cov_result = calculate_goals(
-                        problem.scores[calibration],
+                        problem.source_scores[calibration],
                         base_weight.values[calibration],
-                        problem.scores[test],
+                        problem.source_scores[test],
                         alpha,
                         beta,
                         base_weight.bound,
@@ -437,11 +458,11 @@ def run_weight_ablation(config: dict[str, Any], force: bool = False) -> None:
                         )
                     )
                     calibration = sts_rng.choice(
-                        len(problem.scores), size=n, replace=True
+                        len(problem.source_scores), size=n, replace=True
                     )
-                    test_scores = transport.sample_test_scores(m, rho, sts_rng)
+                    _test_indices, test_scores = transport.sample_test(m, rho, sts_rng)
                     sts_result = calculate_goals(
-                        problem.scores[calibration],
+                        problem.source_scores[calibration],
                         transport_weights[calibration],
                         test_scores,
                         alpha,

@@ -31,6 +31,7 @@ weights:
   - { name: linear, strength: 0.35, clip_quantile: 0.995, ridge: 0.001 }
   - { name: sigmoid, strength: 1.0, clip_quantile: 0.995, ridge: 0.001 }
 transport: { strata: 5, rho: 0.5 }
+shift: { auxiliary_fraction: 0.2 }
 sample_sizes: { n_calibration: 10000, m_test: 500 }
 fcp:
   delta: 0.1

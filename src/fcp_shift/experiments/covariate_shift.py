@@ -7,14 +7,12 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from fcp_shift.data import prepare_dataset
 from fcp_shift.experiments.common import calculate_goals, grid, stack_goal_results
-from fcp_shift.models import conformity_scores, fit_model
 from fcp_shift.reporting.plots import plot_goal_results
 from fcp_shift.reporting.serialization import RunDirectory
 from fcp_shift.reproducibility import stable_seed
-from fcp_shift.shifts import sample_covariate_shift
-from fcp_shift.weights import fit_weight
+from fcp_shift.shifts import prepare_shift_problem, sample_covariate_shift
+from fcp_shift.weights import direction_variant, fit_score_projection, fit_weight
 
 LOGGER = logging.getLogger(__name__)
 
@@ -26,33 +24,37 @@ def run_covariate_shift(config: dict[str, Any], force: bool = False) -> None:
     sample = config["sample_sizes"]
     n, m = int(sample["n_calibration"]), int(sample["m_test"])
     repetitions = int(config["experiment"]["repetitions"])
-    model_seed = int(config.get("model", {}).get("seed", 2026))
+    auxiliary_fraction = float(config.get("shift", {}).get("auxiliary_fraction", 0.2))
 
     for dataset_config in config["datasets"]:
         LOGGER.info("Preparing dataset %s", dataset_config["name"])
-        dataset = prepare_dataset(dataset_config, model_seed)
-        model = fit_model(
-            dataset.task, dataset.x_train, dataset.y_train, config.get("model", {}), model_seed
+        problem = prepare_shift_problem(
+            dataset_config, config.get("model", {}), auxiliary_fraction
         )
-        scores = conformity_scores(
-            model,
-            dataset.x_source,
-            dataset.y_source,
-            dataset.task,
-            config.get("model", {}).get("classification_score"),
-        )
+        dataset, scores = problem.dataset, problem.source_scores
+        projections = {}
         for weight_config in config["weights"]:
+            ridge = float(weight_config.get("ridge", 1e-3))
+            direction = weight_config.get("direction", "ridge")
+            direction_seed = int(weight_config.get("direction_seed", 2026))
+            key = (ridge, direction, direction_seed)
+            if key not in projections:
+                projections[key] = fit_score_projection(
+                    dataset.x_train, problem.auxiliary_features,
+                    problem.auxiliary_scores, ridge,
+                    method=direction, random_seed=direction_seed,
+                )
+            projection = projections[key]
             fitted_weight = fit_weight(
-                weight_config, dataset.x_train, dataset.x_source, scores
+                weight_config, dataset.x_train, dataset.x_source, scores,
+                score_projection=projection,
             )
             for seed in config["experiment"]["seeds"]:
-                run = RunDirectory(
-                    output_root
-                    / "covariate_shift"
-                    / dataset.name
-                    / fitted_weight.name
-                    / f"seed_{seed}"
-                )
+                weight_root = output_root / "covariate_shift" / dataset.name / fitted_weight.name
+                variant = direction_variant(weight_config)
+                if variant:
+                    weight_root /= variant
+                run = RunDirectory(weight_root / f"seed_{seed}")
                 if run.complete and not force:
                     LOGGER.info("Skipping completed run %s", run.path)
                     continue
@@ -64,6 +66,13 @@ def run_covariate_shift(config: dict[str, Any], force: bool = False) -> None:
                         "weight": fitted_weight.metadata,
                         "seed": seed,
                         "g_mode": "covariate_identity",
+                        "auxiliary_fraction": auxiliary_fraction,
+                        "auxiliary_size": len(problem.auxiliary_scores),
+                        "source_pool_size": len(scores),
+                        "projection_fitted_on": (
+                            "independent_auxiliary_pairs"
+                            if direction == "ridge" else "seeded_random_direction"
+                        ),
                     },
                 )
                 results = []
@@ -119,4 +128,3 @@ def run_covariate_shift(config: dict[str, Any], force: bool = False) -> None:
                 plot_goal_results(run.path, alpha, beta, arrays, f"{dataset.name} — {fitted_weight.name}")
                 run.mark_complete()
                 LOGGER.info("Completed %s", run.path)
-

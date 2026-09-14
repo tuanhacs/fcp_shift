@@ -53,3 +53,24 @@ def test_two_datasets_create_combined_2_by_4_outputs(tmp_path: Path):
     )
     assert pdf.exists() and pdf.stat().st_size > 0
     assert png.exists() and png.stat().st_size > 0
+
+
+def test_combined_figure_reads_random_direction_variant(tmp_path: Path):
+    config = {
+        "datasets": [{"name": "data_a"}],
+        "weights": [{"name": "exponential", "direction": "random", "direction_seed": 19}],
+        "output": {"root": str(tmp_path)},
+    }
+    _write_curves(
+        tmp_path / "covariate_shift" / "data_a" / "exponential"
+        / "direction_random_seed_19" / "seed_1"
+    )
+    _write_curves(
+        tmp_path / "transport_shift" / "data_a" / "exponential"
+        / "direction_random_seed_19" / "rho_0.50" / "seed_1"
+    )
+    pdf, png = make_covariate_transport_figure(
+        config, config, "exponential", 0.5,
+    )
+    assert pdf.exists() and png.exists()
+    assert "direction_random_seed_19" in str(pdf)

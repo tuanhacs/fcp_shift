@@ -15,18 +15,79 @@ class FittedWeight:
     metadata: dict[str, Any]
 
 
+@dataclass(frozen=True)
+class ScoreProjection:
+    """A score-informed direction fitted only on independent auxiliary data."""
+
+    feature_mean: np.ndarray
+    feature_scale: np.ndarray
+    direction: np.ndarray
+    projection_mean: float
+    projection_scale: float
+
+    def transform(self, features: np.ndarray) -> np.ndarray:
+        standardized = (np.asarray(features) - self.feature_mean) / self.feature_scale
+        return (
+            standardized @ self.direction - self.projection_mean
+        ) / self.projection_scale
+
+
+def fit_score_projection(
+    x_reference: np.ndarray,
+    x_auxiliary: np.ndarray,
+    auxiliary_scores: np.ndarray,
+    ridge: float = 1e-3,
+    *,
+    method: str = "ridge",
+    random_seed: int = 2026,
+) -> ScoreProjection:
+    """Freeze a score-informed Ridge or seeded random direction X -> z(X)."""
+    mean = np.mean(x_reference, axis=0)
+    scale = np.std(x_reference, axis=0)
+    scale = np.where(scale > 1e-8, scale, 1.0)
+    auxiliary = (x_auxiliary - mean) / scale
+    if method == "ridge":
+        direction = Ridge(alpha=ridge, fit_intercept=True).fit(
+            auxiliary, auxiliary_scores
+        ).coef_
+    elif method == "random":
+        direction = np.random.default_rng(random_seed).normal(size=auxiliary.shape[1])
+    else:
+        raise ValueError(f"Unsupported weight direction: {method}")
+    norm = np.linalg.norm(direction)
+    if not np.isfinite(norm) or norm < 1e-12:
+        direction = np.ones(auxiliary.shape[1], dtype=float)
+        norm = np.linalg.norm(direction)
+    direction = direction / norm
+    projected = auxiliary @ direction
+    return ScoreProjection(
+        feature_mean=mean,
+        feature_scale=scale,
+        direction=direction,
+        projection_mean=float(np.mean(projected)),
+        projection_scale=float(np.std(projected) + 1e-12),
+    )
+
+
 def _standardized_projection(
     x_reference: np.ndarray,
     x_source: np.ndarray,
     scores: np.ndarray,
     ridge: float,
+    method: str,
+    random_seed: int,
 ) -> np.ndarray:
     mean = np.mean(x_reference, axis=0)
     scale = np.std(x_reference, axis=0)
     scale = np.where(scale > 1e-8, scale, 1.0)
     reference = (x_reference - mean) / scale
     source = (x_source - mean) / scale
-    direction = Ridge(alpha=ridge, fit_intercept=True).fit(source, scores).coef_
+    if method == "ridge":
+        direction = Ridge(alpha=ridge, fit_intercept=True).fit(source, scores).coef_
+    elif method == "random":
+        direction = np.random.default_rng(random_seed).normal(size=source.shape[1])
+    else:
+        raise ValueError(f"Unsupported weight direction: {method}")
     norm = np.linalg.norm(direction)
     if not np.isfinite(norm) or norm < 1e-12:
         direction = np.ones(source.shape[1], dtype=float)
@@ -40,14 +101,21 @@ def fit_weight(
     x_reference: np.ndarray,
     x_source: np.ndarray,
     scores: np.ndarray,
+    score_projection: ScoreProjection | None = None,
 ) -> FittedWeight:
     name = config["name"]
     epsilon = float(config.get("epsilon", 1e-8))
     strength = float(config.get("strength", 0.35))
-    projection = _standardized_projection(
-        x_reference, x_source, scores, float(config.get("ridge", 1e-3))
-    )
-    projection = (projection - np.mean(projection)) / (np.std(projection) + 1e-12)
+    direction_method = str(config.get("direction", "ridge"))
+    direction_seed = int(config.get("direction_seed", 2026))
+    if score_projection is None:
+        projection = _standardized_projection(
+            x_reference, x_source, scores, float(config.get("ridge", 1e-3)),
+            direction_method, direction_seed,
+        )
+        projection = (projection - np.mean(projection)) / (np.std(projection) + 1e-12)
+    else:
+        projection = score_projection.transform(x_source)
     if name == "exponential":
         raw = np.exp(np.clip(strength * projection, -30.0, 30.0))
     elif name == "quadratic":
@@ -83,5 +151,20 @@ def fit_weight(
             "mean": float(np.mean(values)),
             "effective_sample_size": float(np.sum(values) ** 2 / np.sum(values**2)),
             "correlation_weight_score": correlation,
+            "projection_source": (
+                "auxiliary_normalization" if direction_method == "random" and score_projection is not None
+                else "random_direction" if direction_method == "random"
+                else "independent_auxiliary" if score_projection is not None
+                else "source_scores"
+            ),
+            "direction": direction_method,
+            "direction_seed": direction_seed if direction_method == "random" else None,
         },
     )
+
+
+def direction_variant(config: dict[str, Any]) -> str | None:
+    """Output subdirectory for non-default directions; preserve existing Ridge paths."""
+    if config.get("direction", "ridge") == "random":
+        return f"direction_random_seed_{int(config.get('direction_seed', 2026))}"
+    return None

@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import logging
 
-from fcp_shift.config import filter_config, load_config
+from fcp_shift.config import filter_config, load_config, validate_config
 from fcp_shift.ablations import RUNNERS as ABLATION_RUNNERS
 from fcp_shift.ablations.replot import replot_ablation
 from fcp_shift.experiments import run_asymptotic, run_covariate_shift, run_transport_shift
@@ -39,6 +39,28 @@ def _add_plot_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--legend-font-size", type=_positive_float)
 
 
+def _add_direction_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--weight-direction", choices=("ridge", "random"),
+        help="Override the projection direction for every configured weight",
+    )
+    parser.add_argument(
+        "--direction-seed", type=int,
+        help="Seed for the random projection (default: 2026)",
+    )
+
+
+def _override_direction(config: dict, args: argparse.Namespace) -> None:
+    if args.weight_direction is None and args.direction_seed is None:
+        return
+    for weight in config.get("weights", []):
+        if args.weight_direction is not None:
+            weight["direction"] = args.weight_direction
+        if args.direction_seed is not None:
+            weight["direction_seed"] = args.direction_seed
+    validate_config(config)
+
+
 def _plot_style_from_args(args: argparse.Namespace) -> PlotStyle:
     return PlotStyle(
         figsize=tuple(args.figsize) if args.figsize else None,
@@ -61,18 +83,21 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--seed", type=int)
     run.add_argument("--force", action="store_true")
     run.add_argument("--log-level", default="INFO")
+    _add_direction_arguments(run)
     _add_plot_arguments(run)
     plot = subparsers.add_parser(
         "plot", help="Regenerate ablation PDFs from saved CSV/NPZ results"
     )
     plot.add_argument("--config", required=True)
     plot.add_argument("--log-level", default="INFO")
+    _add_direction_arguments(plot)
     _add_plot_arguments(plot)
     figures = subparsers.add_parser(
         "figures", help="Aggregate completed weights into shared main figures"
     )
     figures.add_argument("--config", required=True)
     figures.add_argument("--log-level", default="INFO")
+    _add_direction_arguments(figures)
     _add_plot_arguments(figures)
     combined = subparsers.add_parser(
         "main-figure",
@@ -89,6 +114,7 @@ def build_parser() -> argparse.ArgumentParser:
     combined.add_argument("--datasets", nargs="+")
     combined.add_argument("--output")
     combined.add_argument("--log-level", default="INFO")
+    _add_direction_arguments(combined)
     _add_plot_arguments(combined)
     return parser
 
@@ -103,6 +129,8 @@ def main(argv: list[str] | None = None) -> None:
     if args.command == "main-figure":
         covariate_config = load_config(args.covariate_config)
         transport_config = load_config(args.transport_config)
+        _override_direction(covariate_config, args)
+        _override_direction(transport_config, args)
         generated = make_covariate_transport_figure(
             covariate_config,
             transport_config,
@@ -115,6 +143,7 @@ def main(argv: list[str] | None = None) -> None:
             print(path)
         return
     config = load_config(args.config)
+    _override_direction(config, args)
     if args.command == "plot":
         generated = replot_ablation(config)
         for path in generated:

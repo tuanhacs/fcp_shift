@@ -7,14 +7,12 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from fcp_shift.data import prepare_dataset
 from fcp_shift.experiments.common import calculate_goals, grid, stack_goal_results
-from fcp_shift.models import conformity_scores, fit_model
 from fcp_shift.reporting.plots import plot_goal_results
 from fcp_shift.reporting.serialization import RunDirectory
 from fcp_shift.reproducibility import stable_seed
-from fcp_shift.shifts import build_score_transport
-from fcp_shift.weights import fit_weight
+from fcp_shift.shifts import build_score_transport, prepare_shift_problem
+from fcp_shift.weights import direction_variant, fit_score_projection, fit_weight
 
 LOGGER = logging.getLogger(__name__)
 
@@ -26,38 +24,47 @@ def run_transport_shift(config: dict[str, Any], force: bool = False) -> None:
     n = int(config["sample_sizes"]["n_calibration"])
     m = int(config["sample_sizes"]["m_test"])
     repetitions = int(config["experiment"]["repetitions"])
-    model_seed = int(config.get("model", {}).get("seed", 2026))
     strata_count = int(config["transport"].get("strata", 5))
+    auxiliary_fraction = float(config.get("shift", {}).get("auxiliary_fraction", 0.2))
 
     for dataset_config in config["datasets"]:
         LOGGER.info("Preparing dataset %s", dataset_config["name"])
-        dataset = prepare_dataset(dataset_config, model_seed)
-        model = fit_model(
-            dataset.task, dataset.x_train, dataset.y_train, config.get("model", {}), model_seed
+        problem = prepare_shift_problem(
+            dataset_config, config.get("model", {}), auxiliary_fraction
         )
-        scores = conformity_scores(
-            model,
-            dataset.x_source,
-            dataset.y_source,
-            dataset.task,
-            config.get("model", {}).get("classification_score"),
-        )
+        dataset, scores = problem.dataset, problem.source_scores
+        projections = {}
         for weight_config in config["weights"]:
-            base_weight = fit_weight(weight_config, dataset.x_train, dataset.x_source, scores)
-            transport = build_score_transport(scores, base_weight.values, strata_count)
+            ridge = float(weight_config.get("ridge", 1e-3))
+            direction = weight_config.get("direction", "ridge")
+            direction_seed = int(weight_config.get("direction_seed", 2026))
+            key = (ridge, direction, direction_seed)
+            if key not in projections:
+                projections[key] = fit_score_projection(
+                    dataset.x_train, problem.auxiliary_features,
+                    problem.auxiliary_scores, ridge,
+                    method=direction, random_seed=direction_seed,
+                )
+            projection = projections[key]
+            base_weight = fit_weight(
+                weight_config, dataset.x_train, dataset.x_source, scores,
+                score_projection=projection,
+            )
+            transport = build_score_transport(
+                scores, base_weight.values, strata_count,
+                stratification_values=projection.transform(dataset.x_source),
+                reference_values=projection.transform(problem.auxiliary_features),
+            )
             for rho in config["transport"]["rhos"]:
                 rho = float(rho)
                 transport_weights = transport.weights(rho)
                 bound = float(np.max(transport_weights))
                 for seed in config["experiment"]["seeds"]:
-                    run = RunDirectory(
-                        output_root
-                        / "transport_shift"
-                        / dataset.name
-                        / base_weight.name
-                        / f"rho_{rho:.2f}"
-                        / f"seed_{seed}"
-                    )
+                    weight_root = output_root / "transport_shift" / dataset.name / base_weight.name
+                    variant = direction_variant(weight_config)
+                    if variant:
+                        weight_root /= variant
+                    run = RunDirectory(weight_root / f"rho_{rho:.2f}" / f"seed_{seed}")
                     if run.complete and not force:
                         LOGGER.info("Skipping completed run %s", run.path)
                         continue
@@ -72,6 +79,15 @@ def run_transport_shift(config: dict[str, Any], force: bool = False) -> None:
                             "stratum_probabilities_calibration": transport.p,
                             "stratum_probabilities_test": transport.q,
                             "permutation": transport.permutation,
+                            "strata_cutpoints": transport.cutpoints,
+                            "stratification": (
+                                "auxiliary_score_projection_of_X"
+                                if direction == "ridge" else "seeded_random_projection_of_X"
+                            ),
+                            "auxiliary_fraction": auxiliary_fraction,
+                            "auxiliary_size": len(problem.auxiliary_scores),
+                            "source_pool_size": len(scores),
+                            "rho_zero_weight": "stratum_coarsened_exponential_tilt",
                             "seed": seed,
                             "g_mode": "algorithm_1",
                         },
@@ -83,7 +99,7 @@ def run_transport_shift(config: dict[str, Any], force: bool = False) -> None:
                             stable_seed("transport", dataset.name, base_weight.name, rho, seed, repetition)
                         )
                         calibration = rng.choice(len(scores), size=n, replace=True)
-                        test_scores = transport.sample_test_scores(m, rho, rng)
+                        _test_indices, test_scores = transport.sample_test(m, rho, rng)
                         result = calculate_goals(
                             scores[calibration],
                             transport_weights[calibration],
@@ -134,4 +150,3 @@ def run_transport_shift(config: dict[str, Any], force: bool = False) -> None:
                     )
                     run.mark_complete()
                     LOGGER.info("Completed %s", run.path)
-

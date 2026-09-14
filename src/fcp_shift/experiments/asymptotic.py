@@ -14,7 +14,7 @@ from fcp_shift.reporting.plots import plot_asymptotic
 from fcp_shift.reporting.serialization import RunDirectory
 from fcp_shift.reproducibility import stable_seed
 from fcp_shift.shifts import sample_covariate_shift
-from fcp_shift.weights import fit_weight
+from fcp_shift.weights import direction_variant, fit_weight
 
 LOGGER = logging.getLogger(__name__)
 
@@ -31,7 +31,11 @@ def run_asymptotic(config: dict[str, Any], force: bool = False) -> None:
     model_seed = int(config.get("model", {}).get("seed", 2026))
 
     for seed in config["experiment"]["seeds"]:
-        run = RunDirectory(output_root / "asymptotic" / "exponential" / f"seed_{seed}")
+        weight_root = output_root / "asymptotic" / "exponential"
+        variant = direction_variant(config["weights"][0])
+        if variant:
+            weight_root /= variant
+        run = RunDirectory(weight_root / f"seed_{seed}")
         if run.complete and not force:
             summary_path = run.path / "summary.csv"
             if summary_path.exists():

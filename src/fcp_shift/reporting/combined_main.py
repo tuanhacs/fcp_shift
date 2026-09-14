@@ -11,6 +11,7 @@ import numpy as np
 from matplotlib.ticker import FixedLocator, FormatStrFormatter, FuncFormatter
 
 from .grouped import load_weight_runs
+from fcp_shift.weights import direction_variant
 from .labels import (
     display_dataset_name,
     EMPIRICAL_COLOR,
@@ -180,20 +181,26 @@ def make_covariate_transport_figure(
     transport_root = Path(transport_config.get("output", {}).get("root", "outputs"))
     covariate_datasets = {item["name"]: item for item in covariate_config["datasets"]}
     transport_names = {item["name"] for item in transport_config["datasets"]}
+    covariate_weights = {item["name"]: item for item in covariate_config.get("weights", [])}
+    transport_weights = {item["name"]: item for item in transport_config.get("weights", [])}
+    cov_variant = direction_variant(covariate_weights.get(weight, {}))
+    trans_variant = direction_variant(transport_weights.get(weight, {}))
+
+    def _weight_directories(name: str) -> tuple[Path, Path]:
+        cov = covariate_root / "covariate_shift" / name / weight
+        trans = transport_root / "transport_shift" / name / weight
+        if cov_variant:
+            cov /= cov_variant
+        if trans_variant:
+            trans /= trans_variant
+        return cov, trans / f"rho_{rho:.2f}"
 
     if datasets is None:
         selected = []
         for name in covariate_datasets:
             if name not in transport_names:
                 continue
-            cov_directory = covariate_root / "covariate_shift" / name / weight
-            trans_directory = (
-                transport_root
-                / "transport_shift"
-                / name
-                / weight
-                / f"rho_{rho:.2f}"
-            )
+            cov_directory, trans_directory = _weight_directories(name)
             if load_weight_runs(cov_directory) is not None and load_weight_runs(trans_directory) is not None:
                 selected.append(name)
     else:
@@ -207,14 +214,7 @@ def make_covariate_transport_figure(
     for name in selected:
         if name not in covariate_datasets or name not in transport_names:
             raise ValueError(f"Dataset {name!r} is not present in both configurations")
-        cov_directory = covariate_root / "covariate_shift" / name / weight
-        trans_directory = (
-            transport_root
-            / "transport_shift"
-            / name
-            / weight
-            / f"rho_{rho:.2f}"
-        )
+        cov_directory, trans_directory = _weight_directories(name)
         covariate = load_weight_runs(cov_directory)
         transport = load_weight_runs(trans_directory)
         if covariate is None:
@@ -300,6 +300,8 @@ def make_covariate_transport_figure(
 
     if output_path is None:
         destination = covariate_root / "main_figures" / "combined"
+        if cov_variant or trans_variant:
+            destination /= f"cov_{cov_variant or 'ridge'}__trans_{trans_variant or 'ridge'}"
         destination.mkdir(parents=True, exist_ok=True)
         stem = f"covariate_transport_{weight}_rho_{rho:.2f}_{dataset_count}datasets"
         pdf_path = destination / f"{stem}.pdf"

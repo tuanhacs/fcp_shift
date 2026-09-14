@@ -178,6 +178,7 @@ weights_2x4.pdf
 When multiple datasets are configured, one `weights_<dataset>_2x4.pdf` file is written per dataset.
 
 Each family defines its corresponding shifted target distribution; this fact is explicitly recorded in `metadata.json`. The STS experiment uses the configured `rho` and estimates the required transport map with Algorithm 1.
+For both shift settings, an independent auxiliary subset is held out before calibration/test resampling. A Ridge score projection is fitted on that subset and evaluated using features only. STS strata are quantiles of this fixed projection, not quantiles of the source scores. Weight-ablation outputs generated before this change must be rerun with `--force` before plotting them with the revised design.
 
 ## 6. DKW and CoJER baseline comparison
 

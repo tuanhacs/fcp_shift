@@ -53,6 +53,21 @@ def validate_config(config: dict[str, Any]) -> None:
             if dataset.get("task") not in {"classification", "regression"}:
                 raise ConfigError(f"Invalid task for dataset {dataset.get('name')}")
 
+    for weight in config.get("weights", []):
+        method = weight.get("direction", "ridge")
+        if method not in {"ridge", "random"}:
+            raise ConfigError("weight.direction must be 'ridge' or 'random'")
+        seed = weight.get("direction_seed", 2026)
+        if not isinstance(seed, int) or isinstance(seed, bool) or seed < 0:
+            raise ConfigError("weight.direction_seed must be a non-negative integer")
+
+    if kind in {"covariate_shift", "transport_shift", "ablation_weights"}:
+        auxiliary_fraction = float(
+            config.get("shift", {}).get("auxiliary_fraction", 0.2)
+        )
+        if not 0.0 < auxiliary_fraction < 1.0:
+            raise ConfigError("shift.auxiliary_fraction must lie in (0, 1)")
+
     delta = float(config.get("fcp", {}).get("delta", 0.0))
     if not 0.0 < delta < 1.0:
         raise ConfigError("fcp.delta must lie in (0, 1)")

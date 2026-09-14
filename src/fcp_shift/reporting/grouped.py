@@ -12,6 +12,8 @@ import numpy as np
 
 from .labels import display_dataset_name
 from .style import figure_size, font_size, set_publication_ticks
+from fcp_shift.weights import direction_variant
+from fcp_shift.reproducibility import stable_seed
 
 LOGGER = logging.getLogger(__name__)
 
@@ -189,7 +191,16 @@ def make_grouped_figures(config: dict[str, Any]) -> list[Path]:
     root = Path(config.get("output", {}).get("root", "outputs"))
     figure_root = root / "main_figures" / kind
     generated: list[Path] = []
-    weight_names = [item["name"] for item in config["weights"]]
+    weight_configs = {item["name"]: item for item in config["weights"]}
+    weight_names = list(weight_configs)
+    variants = {name: direction_variant(item) for name, item in weight_configs.items()}
+    variant_directory = None
+    if any(value is not None for value in variants.values()):
+        unique = set(variants.values())
+        variant_directory = (
+            next(iter(unique)) if len(unique) == 1
+            else f"direction_mix_{stable_seed(sorted(variants.items()))}"
+        )
 
     for dataset in config["datasets"]:
         dataset_name = dataset["name"]
@@ -204,6 +215,9 @@ def make_grouped_figures(config: dict[str, Any]) -> list[Path]:
             results = {}
             for weight in weight_names:
                 weight_directory = dataset_directory / weight
+                variant = direction_variant(weight_configs[weight])
+                if variant:
+                    weight_directory /= variant
                 if rho is not None:
                     weight_directory = weight_directory / f"rho_{rho:.2f}"
                 loaded = load_weight_runs(weight_directory)
@@ -215,6 +229,8 @@ def make_grouped_figures(config: dict[str, Any]) -> list[Path]:
                 )
                 continue
             destination = figure_root / dataset_name
+            if variant_directory:
+                destination /= variant_directory
             title = display_dataset_name(dataset_name)
             if rho is not None:
                 destination = destination / f"rho_{rho:.2f}"

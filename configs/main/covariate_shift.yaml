@@ -58,13 +58,16 @@ model:
   classification_score: log_margin
 
 weights:
-  - { name: exponential, strength: 0.35, clip_quantile: 0.995, ridge: 0.001 }
+  - { name: exponential, strength: 0.35, clip_quantile: 0.995, ridge: 0.001, direction: ridge, direction_seed: 2026 }
   # - { name: quadratic, strength: 1.0, clip_quantile: 0.995, ridge: 0.001 }
   # - {name: mahalanobis, strength: 1.0, clip_quantile: 0.995}
 
 sample_sizes:
   n_calibration: 10000
   m_test: 100
+
+shift:
+  auxiliary_fraction: 0.2
 
 fcp:
   delta: 0.1

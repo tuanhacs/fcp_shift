@@ -5,6 +5,7 @@ model: {seed: 3, learning_rate: 0.1, max_iter: 20, max_leaf_nodes: 7, early_stop
 weights:
   - {name: exponential, strength: 0.2, clip_quantile: 0.95}
 transport: {strata: 3, rhos: [0.5]}
+shift: {auxiliary_fraction: 0.2}
 sample_sizes: {n_calibration: 100, m_test: 80}
 fcp:
   delta: 0.1
@@ -14,4 +15,3 @@ fcp:
   alpha_grid: {start: 0.0, stop: 1.0, points: 11}
   beta_grid: {start: 0.0, stop: 1.0, points: 11}
 output: {root: outputs/smoke}
-

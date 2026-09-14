@@ -1,4 +1,3 @@
-from .factory import FittedWeight, fit_weight
+from .factory import FittedWeight, ScoreProjection, direction_variant, fit_score_projection, fit_weight
 
-__all__ = ["FittedWeight", "fit_weight"]
-
+__all__ = ["FittedWeight", "ScoreProjection", "direction_variant", "fit_score_projection", "fit_weight"]
