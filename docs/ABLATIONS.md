@@ -160,13 +160,18 @@ Configuration: `configs/ablation/weights.yaml`
 python -m fcp_shift.cli run --config configs/ablation/weights.yaml
 ```
 
-The workflow compares five weight families in both Covariate Shift and Score-Transport Shift (STS):
+The workflow compares eight weight families in both Covariate Shift and Score-Transport Shift (STS):
 
 - exponential;
 - quadratic;
 - Mahalanobis;
 - positive linear (new);
-- sigmoid (new).
+- sigmoid;
+- logarithmic, with raw weight `1 + strength * log(1 + z(x)^2)`;
+- arctangent, with raw weight `1 + strength * (1/2 + atan(z(x))/pi)`;
+- power tilt, with raw weight `(1 + |z(x)|)^(strength * sign(z(x)))`.
+
+Arctangent and power tilt are strictly increasing in `z(x)` when `strength > 0` (before upper-tail clipping). At `strength = 0`, both give uniform weights. Arctangent is bounded, while power tilt has polynomial tails. Increasing `strength` makes test sampling more concentrated toward larger `z(x)` values.
 
 For each dataset it produces one `2 x 4` figure. The top row is Covariate Shift and the bottom row is Score-Transport Shift. Columns are the fixed-alpha, uniform-alpha, fixed-beta, and uniform-beta quantities from equations 7–10. Each panel contains the usual black reference line and one mean curve with a standard-deviation band for every weight. With a single configured dataset, the output is:
 

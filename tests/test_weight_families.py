@@ -1,12 +1,15 @@
 import numpy as np
 import pytest
 
-from fcp_shift.weights import direction_variant, fit_score_projection, fit_weight
+from fcp_shift.weights import ScoreProjection, direction_variant, fit_score_projection, fit_weight
 
 
 @pytest.mark.parametrize(
     "name",
-    ["exponential", "quadratic", "mahalanobis", "linear", "sigmoid"],
+    [
+        "exponential", "quadratic", "mahalanobis", "linear", "sigmoid",
+        "logarithmic", "arctangent", "power_tilt",
+    ],
 )
 def test_weight_families_are_finite_positive_and_normalized(name: str) -> None:
     rng = np.random.default_rng(17)
@@ -81,3 +84,55 @@ def test_direction_variant_keeps_ridge_path_and_separates_random_seed() -> None:
     assert direction_variant({"direction": "random", "direction_seed": 19}) == (
         "direction_random_seed_19"
     )
+
+
+def test_logarithmic_weight_uses_log_one_plus_squared_projection() -> None:
+    projection = ScoreProjection(
+        feature_mean=np.zeros(1), feature_scale=np.ones(1),
+        direction=np.ones(1), projection_mean=0.0, projection_scale=1.0,
+    )
+    x_source = np.array([[-3.0], [-1.0], [0.0], [1.0], [3.0]])
+    fitted = fit_weight(
+        {"name": "logarithmic", "strength": 1.0, "clip_quantile": 1.0},
+        np.zeros((2, 1)), x_source, np.arange(len(x_source)),
+        score_projection=projection,
+    )
+    expected = 1.0 + 1e-8 + np.log1p(x_source[:, 0] ** 2)
+    np.testing.assert_allclose(fitted.values, expected / expected.mean())
+    assert fitted.values[0] > fitted.values[1] > fitted.values[2]
+    assert fitted.values[0] == pytest.approx(fitted.values[-1])
+
+
+@pytest.mark.parametrize("name", ["arctangent", "power_tilt"])
+def test_new_weights_increase_with_projection_and_strength(name: str) -> None:
+    projection = ScoreProjection(
+        feature_mean=np.zeros(1), feature_scale=np.ones(1),
+        direction=np.ones(1), projection_mean=0.0, projection_scale=1.0,
+    )
+    z = np.array([-4.0, -1.0, 0.0, 1.0, 4.0])
+    x_source = z[:, None]
+
+    def fitted_at(strength: float):
+        return fit_weight(
+            {"name": name, "strength": strength, "clip_quantile": 1.0},
+            np.zeros((2, 1)), x_source, z, score_projection=projection,
+        ).values
+
+    values = fitted_at(1.0)
+    if name == "arctangent":
+        raw = 1.0 + 0.5 + np.arctan(z) / np.pi
+    else:
+        raw = (1.0 + np.abs(z)) ** np.sign(z)
+    np.testing.assert_allclose(values, raw / raw.mean())
+    assert np.all(np.diff(values) > 0.0)
+    assert fitted_at(2.0)[-1] / fitted_at(2.0)[0] > values[-1] / values[0]
+    np.testing.assert_allclose(fitted_at(0.0), np.ones_like(z))
+
+
+@pytest.mark.parametrize("name", ["arctangent", "power_tilt"])
+def test_new_monotone_weights_reject_negative_strength(name: str) -> None:
+    with pytest.raises(ValueError, match="nonnegative"):
+        fit_weight(
+            {"name": name, "strength": -1.0},
+            np.zeros((2, 1)), np.arange(5.0)[:, None], np.arange(5.0),
+        )

@@ -52,6 +52,9 @@ def _plot_dataset(
         "mahalanobis": "#009E73",
         "linear": "#CC79A7",
         "sigmoid": "#7B61A8",
+        "logarithmic": "#8C6D31",
+        "arctangent": "#D1495B",
+        "power_tilt": "#4C5B9B",
     }
     figure, axis = plt.subplots(figsize=figure_size((8, 5)))
     for index, (weight, curves) in enumerate(weight_curves.items()):

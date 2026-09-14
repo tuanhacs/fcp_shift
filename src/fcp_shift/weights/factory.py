@@ -120,11 +120,23 @@ def fit_weight(
         raw = np.exp(np.clip(strength * projection, -30.0, 30.0))
     elif name == "quadratic":
         raw = epsilon + 1.0 + strength * projection**2
+    elif name == "logarithmic":
+        # log(1 + z^2), evaluated without squaring very large projections.
+        raw = epsilon + 1.0 + strength * (2.0 * np.log(np.hypot(1.0, projection)))
     elif name == "linear":
         raw = np.maximum(1.0 + strength * projection, epsilon)
     elif name == "sigmoid":
         scaled = np.clip(strength * projection, -30.0, 30.0)
         raw = epsilon + 2.0 / (1.0 + np.exp(-scaled))
+    elif name == "arctangent":
+        if strength < 0.0:
+            raise ValueError("arctangent weight strength must be nonnegative")
+        raw = 1.0 + strength * (0.5 + np.arctan(projection) / np.pi)
+    elif name == "power_tilt":
+        if strength < 0.0:
+            raise ValueError("power_tilt weight strength must be nonnegative")
+        log_raw = strength * np.sign(projection) * np.log1p(np.abs(projection))
+        raw = np.exp(np.clip(log_raw, -30.0, 30.0))
     elif name == "mahalanobis":
         mean = np.mean(x_reference, axis=0)
         scale = np.std(x_reference, axis=0)
@@ -138,7 +150,11 @@ def fit_weight(
         raise ValueError("weight.clip_quantile must lie in (0, 1]")
     raw = np.clip(raw, epsilon, np.quantile(raw, clip_quantile))
     values = raw / np.mean(raw)
-    correlation = float(np.corrcoef(values, scores)[0, 1])
+    correlation = (
+        float(np.corrcoef(values, scores)[0, 1])
+        if np.std(values) > 1e-14 and np.std(scores) > 1e-14
+        else 0.0
+    )
     return FittedWeight(
         name=name,
         values=values,

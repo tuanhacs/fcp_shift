@@ -39,6 +39,9 @@ WEIGHT_COLORS = {
     "mahalanobis": "#009E73",
     "linear": "#CC79A7",
     "sigmoid": "#7B61A8",
+    "logarithmic": "#8C6D31",
+    "arctangent": "#D1495B",
+    "power_tilt": "#4C5B9B",
 }
 
 
@@ -361,7 +364,7 @@ def run_weight_ablation(config: dict[str, Any], force: bool = False) -> None:
     weights = [item["name"] for item in config["weights"]]
 
     for seed in config["experiment"]["seeds"]:
-        # Separate this five-family study from legacy gamma-misspecification outputs.
+        # Separate this weight-family study from legacy gamma-misspecification outputs.
         run = RunDirectory(scoped_ablation_path(root, "weight_families", seed, config))
         if run.complete and not force:
             continue

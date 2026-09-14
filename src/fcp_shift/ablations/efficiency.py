@@ -34,6 +34,11 @@ WEIGHT_COLORS = {
     "exponential": "#0072B2",
     "quadratic": "#D55E00",
     "mahalanobis": "#009E73",
+    "linear": "#CC79A7",
+    "sigmoid": "#7B61A8",
+    "logarithmic": "#8C6D31",
+    "arctangent": "#D1495B",
+    "power_tilt": "#4C5B9B",
 }
 
 
