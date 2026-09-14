@@ -1,4 +1,4 @@
-experiment: { kind: ablation_timing, repetitions: 20, seeds: [31415] }
+experiment: { kind: ablation_timing, repetitions: 10, seeds: [31415] }
 datasets:
   - {
       name: adult,
