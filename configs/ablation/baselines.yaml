@@ -56,10 +56,13 @@ model:
   }
 weights:
   - { name: exponential, strength: 0.35, clip_quantile: 0.995, ridge: 0.001 }
-  - { name: quadratic, strength: 1.0, clip_quantile: 0.995, ridge: 0.001 }
-  - { name: mahalanobis, strength: 1.0, clip_quantile: 0.995 }
+  # - { name: quadratic, strength: 1.0, clip_quantile: 0.995, ridge: 0.001 }
+  # - { name: mahalanobis, strength: 1.0, clip_quantile: 0.995 }
   - { name: linear, strength: 0.35, clip_quantile: 0.995, ridge: 0.001 }
   - { name: sigmoid, strength: 1.0, clip_quantile: 0.995, ridge: 0.001 }
+  # - { name: logarithmic, strength: 1.0, clip_quantile: 0.995, ridge: 0.001 }
+  - { name: arctangent, strength: 2.0, clip_quantile: 0.995, ridge: 0.001 }
+  - { name: power_tilt, strength: 0.5, clip_quantile: 0.995, ridge: 0.001 }
 sample_sizes: { n_calibration: 10000, m_test: 500 }
 baselines:
   cojer_template_simulations: 1000
