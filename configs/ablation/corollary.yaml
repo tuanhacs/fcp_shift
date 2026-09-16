@@ -33,9 +33,9 @@ model:
   }
 weights:
   - { name: exponential, strength: 0.35, clip_quantile: 0.995, ridge: 0.001 }
+  - { name: linear, strength: 0.35, clip_quantile: 0.995, ridge: 0.001 }
   # - { name: quadratic, strength: 1.0, clip_quantile: 0.995, ridge: 0.001 }
   - { name: sigmoid, strength: 1.0, clip_quantile: 0.995, ridge: 0.001 }
-  - { name: linear, strength: 0.35, clip_quantile: 0.995, ridge: 0.001 }
 ablation:
   alphas: [0.05, 0.1, 0.2]
   n_grid: [250, 500, 1000, 2000, 5000, 10000, 20000, 50000]
