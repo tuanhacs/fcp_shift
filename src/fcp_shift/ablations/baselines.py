@@ -180,7 +180,7 @@ def _plot_grid(
         )
 
     axes[-1, 0].set_xlabel(r"Failure probability $\delta$")
-    axes[0, 0].legend(
+    axes[0, len(ordered_datasets) - 1].legend(
         handles=[
             Line2D(
                 [0], [0], color="black", linestyle="--", linewidth=2,
