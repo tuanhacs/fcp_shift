@@ -174,17 +174,11 @@ def _plot_grid(
                     )
                 )
 
-        axes[row, 0].annotate(
-            weight.replace("_", " ").title(),
-            xy=(-0.24, 0.5),
-            xycoords="axes fraction",
-            rotation=90,
-            ha="center",
-            va="center",
+        weight_label = weight.replace("_", " ").title()
+        axes[row, 0].set_ylabel(
+            f"{weight_label}\nGuarantee probability",
             fontsize=font_size("label", 10.0),
-            fontweight="bold",
         )
-        axes[row, 0].set_ylabel("Guarantee probability")
 
     axes[-1, 0].set_xlabel(r"Failure probability $\delta$")
     axes[0, 0].legend(
