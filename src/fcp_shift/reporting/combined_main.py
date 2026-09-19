@@ -24,7 +24,7 @@ from .labels import (
     UNIFORM_BETA_COLOR,
     UNIFORM_BETA_PASS_LABEL,
 )
-from .style import figure_size, font_size, set_probability_limits
+from .style import compact_tick_label, figure_size, font_size, set_probability_limits
 
 
 _PAPER_FONT_SIZE = 10.0
@@ -43,6 +43,18 @@ def _guarantee_line(axis, x, indicators, color, label, linestyle="-") -> np.ndar
         linestyle=linestyle, label=label, zorder=2,
     )
     return probability
+
+
+def _hide_leftmost_x_tick_label(axis) -> None:
+    """Avoid overlap between the lower y tick and the first x tick."""
+    x_min = axis.get_xlim()[0]
+    axis.xaxis.set_major_formatter(
+        FuncFormatter(
+            lambda value, position: ""
+            if np.isclose(value, x_min)
+            else compact_tick_label(value, position)
+        )
+    )
 
 
 def _format_axis(axis, *, forward: bool, y_tick_max: float = 1.0) -> None:
@@ -102,6 +114,7 @@ def _plot_forward(
     set_probability_limits(
         axis, alpha, 1.0 - delta, fixed_probability, uniform_probability
     )
+    _hide_leftmost_x_tick_label(axis)
     if legend:
         axis.legend(
             fontsize=font_size("legend", 10.0),
@@ -151,6 +164,7 @@ def _plot_inverse(
     set_probability_limits(
         axis, beta, 1.0 - delta, fixed_probability, uniform_probability
     )
+    _hide_leftmost_x_tick_label(axis)
     if legend:
         axis.legend(
             fontsize=font_size("legend", 10.0),
@@ -275,12 +289,6 @@ def make_covariate_transport_figure(
             column == 0,
             transport_delta,
         )
-
-    # A single set of y tick labels is sufficient for the shared probability
-    # scale and avoids collisions with the leftmost x tick in columns 2--4.
-    for row in range(2):
-        for column in range(1, 2 * dataset_count):
-            axes[row, column].tick_params(axis="y", labelleft=False)
 
     axes[0, 0].annotate(
         "Covariate Shift",
