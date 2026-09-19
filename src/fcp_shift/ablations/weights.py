@@ -259,6 +259,14 @@ def _plot_grid(
                         else compact_tick_label(value, position)
                     )
                 )
+                x_min = axis.get_xlim()[0]
+                axis.xaxis.set_major_formatter(
+                    FuncFormatter(
+                        lambda value, position, minimum=x_min: ""
+                        if np.isclose(value, minimum)
+                        else compact_tick_label(value, position)
+                    )
+                )
                 axis.grid(alpha=0.25)
             axes[row, 0].annotate(
                 row_label,
@@ -274,8 +282,6 @@ def _plot_grid(
         axes[1, 2].set_xlabel(r"Target FCP $\beta$")
         axes[0, 0].set_ylabel("Guarantee probability")
         axes[1, 0].set_ylabel("Guarantee probability")
-        axes[0, 2].set_ylabel("Guarantee probability")
-        axes[1, 2].set_ylabel("Guarantee probability")
         legend_handles = [
             Line2D(
                 [0], [0], color="black", linestyle="--", linewidth=2,
