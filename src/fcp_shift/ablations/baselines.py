@@ -181,6 +181,7 @@ def _plot_grid(
             rotation=90,
             ha="center",
             va="center",
+            fontsize=font_size("label", 10.0),
             fontweight="bold",
         )
         axes[row, 0].set_ylabel("Guarantee probability")
