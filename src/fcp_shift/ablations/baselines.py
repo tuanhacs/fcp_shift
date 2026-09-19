@@ -14,7 +14,6 @@ from matplotlib.lines import Line2D
 from matplotlib.ticker import FuncFormatter
 
 from fcp_shift.ablations.common import (
-    prepare_scored_problem,
     publication_dataset_name,
     scoped_ablation_path,
     set_publication_ticks,
@@ -33,8 +32,8 @@ from fcp_shift.reporting.style import (
     compact_tick_label, figure_size, font_size, set_probability_limits,
 )
 from fcp_shift.reproducibility import stable_seed
-from fcp_shift.shifts import sample_covariate_shift
-from fcp_shift.weights import fit_weight
+from fcp_shift.shifts import prepare_shift_problem, sample_covariate_shift
+from fcp_shift.weights import fit_score_projection, fit_weight
 
 LOGGER = logging.getLogger(__name__)
 
@@ -219,6 +218,7 @@ def run_baseline_ablation(config: dict[str, Any], force: bool = False) -> None:
     if np.any((delta_grid <= 0.0) | (delta_grid >= 1.0)):
         raise ValueError("fcp.delta_grid values must lie in (0, 1)")
     repetitions = int(config["experiment"]["repetitions"])
+    auxiliary_fraction = float(config.get("shift", {}).get("auxiliary_fraction", 0.2))
     baseline_config = config["baselines"]
     dkw_bounds = np.stack([dkw_forward(alpha, n, m, delta) for delta in delta_grid])
     dkw_alphas = np.stack([dkw_inverse(beta, n, m, delta) for delta in delta_grid])
@@ -247,27 +247,47 @@ def run_baseline_ablation(config: dict[str, Any], force: bool = False) -> None:
                 "experiment": "ablation_baselines", "seed": seed,
                 "empirical_reference": "ordinary_unweighted_fcp_under_shift",
                 "weighted_fcp_used_for_baseline_checks": False,
+                "auxiliary_fraction": auxiliary_fraction,
+                "projection_fitted_on": "independent_auxiliary_pairs",
             },
         )
         metric_rows = []
         for dataset_config in config["datasets"]:
-            problem = prepare_scored_problem(dataset_config, config["model"])
+            problem = prepare_shift_problem(
+                dataset_config, config["model"], auxiliary_fraction
+            )
+            projections = {}
             for weight_config in config["weights"]:
+                ridge = float(weight_config.get("ridge", 1e-3))
+                direction = str(weight_config.get("direction", "ridge"))
+                direction_seed = int(weight_config.get("direction_seed", 2026))
+                projection_key = (ridge, direction, direction_seed)
+                if projection_key not in projections:
+                    projections[projection_key] = fit_score_projection(
+                        problem.dataset.x_train,
+                        problem.auxiliary_features,
+                        problem.auxiliary_scores,
+                        ridge,
+                        method=direction,
+                        random_seed=direction_seed,
+                    )
                 weight = fit_weight(
                     weight_config,
                     problem.dataset.x_train,
                     problem.dataset.x_source,
-                    problem.scores,
+                    problem.source_scores,
+                    score_projection=projections[projection_key],
                 )
                 for repetition in range(repetitions):
                     rng = np.random.default_rng(
                         stable_seed("baselines", dataset_config["name"], weight.name, seed, repetition)
                     )
                     calibration, test = sample_covariate_shift(
-                        len(problem.scores), weight.values, n, m, rng
+                        len(problem.source_scores), weight.values, n, m, rng
                     )
                     ordinary_p = unweighted_p_values(
-                        problem.scores[test], problem.scores[calibration]
+                        problem.source_scores[test],
+                        problem.source_scores[calibration],
                     )
                     empirical = fcp_curve(ordinary_p, alpha)
                     for delta_index, delta in enumerate(delta_grid):

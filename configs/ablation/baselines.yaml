@@ -54,6 +54,7 @@ model:
     early_stopping: false,
     classification_score: log_margin,
   }
+shift: { auxiliary_fraction: 0.2 }
 weights:
   - { name: exponential, strength: 0.35, clip_quantile: 0.995, ridge: 0.001 }
   # - { name: quadratic, strength: 1.0, clip_quantile: 0.995, ridge: 0.001 }
