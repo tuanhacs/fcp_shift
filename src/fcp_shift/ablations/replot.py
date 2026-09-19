@@ -6,7 +6,7 @@ from typing import Any, Callable
 import numpy as np
 import pandas as pd
 
-from fcp_shift.ablations.baselines import _plot_dataset
+from fcp_shift.ablations.baselines import _plot_grid as _plot_baseline_grid
 from fcp_shift.ablations.common import scoped_ablation_path
 from fcp_shift.ablations.corollary import _plot as _plot_corollary
 from fcp_shift.ablations.delta import _plot as _plot_delta
@@ -142,22 +142,17 @@ def _saved_baseline_curves(
 
 def _replot_baselines(config: dict[str, Any]) -> list[Path]:
     generated = []
-    datasets = [item["name"] for item in config["datasets"]]
     weights = [item["name"] for item in config["weights"]]
     for seed in config["experiment"]["seeds"]:
         run = scoped_ablation_path(_root(config), "baselines", seed, config)
         summary = pd.read_csv(_required(run / "baseline_curves_summary.csv"))
         with np.load(_required(run / "curves.npz")) as arrays:
             delta_grid = np.asarray(arrays["delta"], dtype=float)
-        for dataset in datasets:
-            curves = _saved_baseline_curves(summary, dataset, weights)
-            _plot_dataset(dataset, delta_grid, curves, run)
-            generated.extend(
-                [
-                    run / f"baselines_forward_{dataset}.pdf",
-                    run / f"baselines_inverse_{dataset}.pdf",
-                ]
+        generated.append(
+            _plot_baseline_grid(
+                summary, config["datasets"], weights, delta_grid, run
             )
+        )
     return generated
 
 

@@ -214,11 +214,13 @@ Weighted FCP is never used for DKW/CoJER pass rates or violations. This choice i
 Outputs include:
 
 ```text
-baselines_forward_<dataset>.pdf
-baselines_inverse_<dataset>.pdf
+baselines_forward_<number-of-weights>x<number-of-datasets>.pdf
 baseline_comparison_table.csv
 baseline_curves_summary.csv
 ```
+
+The combined baseline figure uses one row per weight and one column per
+dataset. Regression datasets are placed before classification datasets.
 
 The full configuration covers six paper datasets and five weight families. The table reports forward and inverse pass rates and mean maximum violations for every dataset-weight-delta combination. DKW/CoJER Monte Carlo calibration sizes are controlled in YAML. Increase them for final paper runs and keep the random seed fixed.
 
