@@ -154,7 +154,7 @@ def _plot_inverse(
     if legend:
         axis.legend(
             fontsize=font_size("legend", 10.0),
-            loc="upper left",
+            loc="lower right",
             frameon=True,
             framealpha=0.9,
             borderpad=0.25,
@@ -243,7 +243,7 @@ def make_covariate_transport_figure(
             curves[("covariate", name)],
             title,
             column == 0,
-            False,
+            column == 0,
             False,
             covariate_delta,
         )
@@ -252,7 +252,7 @@ def make_covariate_transport_figure(
             curves[("transport", name)],
             "",
             False,
-            False,
+            column == 0,
             column == 0,
             transport_delta,
         )
@@ -262,7 +262,7 @@ def make_covariate_transport_figure(
             curves[("covariate", name)],
             title,
             column == 0,
-            column == 0,
+            False,
             False,
             covariate_delta,
         )
@@ -271,10 +271,16 @@ def make_covariate_transport_figure(
             curves[("transport", name)],
             "",
             False,
-            column == 0,
+            False,
             column == 0,
             transport_delta,
         )
+
+    # A single set of y tick labels is sufficient for the shared probability
+    # scale and avoids collisions with the leftmost x tick in columns 2--4.
+    for row in range(2):
+        for column in range(1, 2 * dataset_count):
+            axes[row, column].tick_params(axis="y", labelleft=False)
 
     axes[0, 0].annotate(
         "Covariate Shift",
