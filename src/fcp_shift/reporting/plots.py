@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.ticker import FixedLocator, FuncFormatter, FormatStrFormatter
 
-from .labels import GOAL_LABELS
+from .labels import GOAL_LABELS, GOAL_PASS_LABELS
 from .style import figure_size, font_size, set_publication_ticks
 
 
@@ -31,23 +31,63 @@ def _mean_band(axis, x, values, label, color):
     axis.plot(x, mean, color=color, linewidth=2, label=label)
 
 
+def _probability_line(axis, x, indicators, label, color, *, linestyle="-"):
+    """Plot a Monte Carlo probability and its 95% Wilson interval."""
+    values = np.asarray(indicators, dtype=float)
+    if values.ndim == 1:
+        values = np.repeat(values[:, None], len(x), axis=1)
+    repetitions = values.shape[0]
+    probability = values.mean(axis=0)
+    z = 1.959963984540054
+    denominator = 1.0 + z**2 / repetitions
+    center = (probability + z**2 / (2.0 * repetitions)) / denominator
+    radius = z * np.sqrt(
+        probability * (1.0 - probability) / repetitions
+        + z**2 / (4.0 * repetitions**2)
+    ) / denominator
+    axis.fill_between(
+        x,
+        np.maximum(center - radius, 0.0),
+        np.minimum(center + radius, 1.0),
+        color=color,
+        alpha=0.12,
+        linewidth=0,
+    )
+    axis.plot(
+        x, probability, color=color, linewidth=2,
+        linestyle=linestyle, label=label,
+    )
+
+
 def plot_goal_results(
     output_dir: str | Path,
     alpha: np.ndarray,
     beta: np.ndarray,
     arrays: dict[str, np.ndarray],
     title_suffix: str,
+    delta: float,
 ) -> None:
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     figure, axis = plt.subplots(figsize=figure_size((8, 4.8)))
-    _mean_band(axis, alpha, arrays["empirical_fcp"], "Empirical FCP", COLORS["empirical"])
-    _mean_band(axis, alpha, arrays["goal1_bound"], "Goal 1", COLORS["goal1"])
-    _mean_band(axis, alpha, arrays["goal2_bound"], "Goal 2", COLORS["goal2"])
-    axis.set(xlabel=r"Miscoverage level $\alpha$", ylabel="FCP / bound", title=title_suffix)
+    axis.axhline(
+        1.0 - delta, color=COLORS["empirical"], linestyle="--", linewidth=2,
+        label=r"Required probability $1-\delta$",
+    )
+    _probability_line(
+        axis, alpha, arrays["goal1_pass"], GOAL_PASS_LABELS[1], COLORS["goal1"]
+    )
+    _probability_line(
+        axis, alpha, arrays["goal2_uniform_pass"], GOAL_PASS_LABELS[2], COLORS["goal2"]
+    )
+    axis.set(
+        xlabel=r"Miscoverage level $\alpha$",
+        ylabel="Guarantee probability",
+        title=title_suffix,
+    )
     axis.set_xlim(0.0, 1.0)
-    axis.set_ylim(bottom=0.0)
+    axis.set_ylim(0.0, 1.0)
     set_publication_ticks(axis)
     axis.grid(alpha=0.25)
     axis.legend()
@@ -56,10 +96,21 @@ def plot_goal_results(
     plt.close(figure)
 
     figure, axis = plt.subplots(figsize=figure_size((8, 4.8)))
-    axis.plot(beta, beta, color=COLORS["empirical"], linestyle="--", label=r"Target $\beta$")
-    _mean_band(axis, beta, arrays["goal3_fcp"], "Goal 3", COLORS["goal3"])
-    _mean_band(axis, beta, arrays["goal4_fcp"], "Goal 4", COLORS["goal4"])
-    axis.set(xlabel=r"Target FCP $\beta$", ylabel="Empirical FCP", title=title_suffix)
+    axis.axhline(
+        1.0 - delta, color=COLORS["empirical"], linestyle="--", linewidth=2,
+        label=r"Required probability $1-\delta$",
+    )
+    _probability_line(
+        axis, beta, arrays["goal3_pass"], GOAL_PASS_LABELS[3], COLORS["goal3"]
+    )
+    _probability_line(
+        axis, beta, arrays["goal4_uniform_pass"], GOAL_PASS_LABELS[4], COLORS["goal4"]
+    )
+    axis.set(
+        xlabel=r"Target FCP $\beta$",
+        ylabel="Guarantee probability",
+        title=title_suffix,
+    )
     axis.set_xlim(0.0, 1.0)
     axis.set_ylim(0.0, 1.0)
     set_publication_ticks(axis)

@@ -19,6 +19,10 @@ class GoalResult:
     goal4_alpha: np.ndarray
     goal3_fcp: np.ndarray
     goal4_fcp: np.ndarray
+    goal1_pass: np.ndarray
+    goal2_uniform_pass: bool
+    goal3_pass: np.ndarray
+    goal4_uniform_pass: bool
     fixed: dict[str, Any]
     uniform: dict[str, Any]
 
@@ -93,14 +97,20 @@ def calculate_goals(
     else:
         raise ValueError(f"Unsupported G mode: {g_mode}")
 
+    goal3_fcp = fcp_at_levels(p_values, goal3_alpha)
+    goal4_fcp = fcp_at_levels(p_values, goal4_alpha)
     return GoalResult(
         empirical_fcp=empirical,
         goal1_bound=goal1,
         goal2_bound=goal2,
         goal3_alpha=goal3_alpha,
         goal4_alpha=goal4_alpha,
-        goal3_fcp=fcp_at_levels(p_values, goal3_alpha),
-        goal4_fcp=fcp_at_levels(p_values, goal4_alpha),
+        goal3_fcp=goal3_fcp,
+        goal4_fcp=goal4_fcp,
+        goal1_pass=empirical <= goal1 + 1e-12,
+        goal2_uniform_pass=bool(np.all(empirical <= goal2 + 1e-12)),
+        goal3_pass=goal3_fcp <= beta_grid + 1e-12,
+        goal4_uniform_pass=bool(np.all(goal4_fcp <= beta_grid + 1e-12)),
         fixed=fixed.as_dict(),
         uniform=uniform.as_dict(),
     )
@@ -115,6 +125,9 @@ def stack_goal_results(results: list[GoalResult]) -> dict[str, np.ndarray]:
         "goal4_alpha",
         "goal3_fcp",
         "goal4_fcp",
+        "goal1_pass",
+        "goal2_uniform_pass",
+        "goal3_pass",
+        "goal4_uniform_pass",
     ]
     return {name: np.stack([getattr(result, name) for result in results]) for name in names}
-

@@ -64,7 +64,12 @@ def _replot_models(config: dict[str, Any]) -> list[Path]:
         for seed in config["experiment"]["seeds"]:
             run = scoped_ablation_path(_root(config), "models", seed, config, dataset)
             summary = pd.read_csv(_required(run / "curves_summary.csv"))
-            generated.append(_plot_models(summary, weights, models, dataset, run))
+            generated.append(
+                _plot_models(
+                    summary, weights, models, dataset,
+                    float(config["fcp"]["delta"]), run,
+                )
+            )
     return generated
 
 
@@ -106,7 +111,10 @@ def _replot_weights(config: dict[str, Any]) -> list[Path]:
         run = scoped_ablation_path(_root(config), "weight_families", seed, config)
         summary = pd.read_csv(_required(run / "weight_curves_summary.csv"))
         generated.extend(
-            _plot_weight_grid(summary, datasets, weights, alpha, beta, run)
+            _plot_weight_grid(
+                summary, datasets, weights, alpha, beta,
+                float(config["fcp"]["delta"]), run,
+            )
         )
     return generated
 
@@ -117,7 +125,10 @@ def _saved_baseline_curves(
     result: dict[str, dict[str, np.ndarray]] = {}
     for weight in weights:
         result[weight] = {}
-        for curve in ("forward", "dkw_inverse", "cojer_inverse"):
+        for curve in (
+            "dkw_forward_pass", "cojer_forward_pass",
+            "dkw_inverse_pass", "cojer_inverse_pass",
+        ):
             subset = summary[
                 (summary["dataset"] == dataset)
                 & (summary["weight"] == weight)
@@ -143,7 +154,10 @@ def _replot_baselines(config: dict[str, Any]) -> list[Path]:
             cojer_bound = np.asarray(arrays["cojer_bound"], dtype=float)
         for dataset in datasets:
             curves = _saved_baseline_curves(summary, dataset, weights)
-            _plot_dataset(dataset, alpha, beta, curves, dkw_bound, cojer_bound, run)
+            _plot_dataset(
+                dataset, alpha, beta, curves, dkw_bound, cojer_bound,
+                float(config["fcp"]["delta"]), run,
+            )
             generated.extend(
                 [
                     run / f"baselines_forward_{dataset}.pdf",

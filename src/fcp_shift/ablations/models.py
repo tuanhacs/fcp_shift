@@ -30,13 +30,17 @@ from fcp_shift.reporting.labels import (
     EMPIRICAL_COLOR,
     FIXED_ALPHA_COLOR,
     FIXED_ALPHA_LABEL,
+    FIXED_ALPHA_PASS_LABEL,
     FIXED_BETA_COLOR,
     FIXED_BETA_LABEL,
+    FIXED_BETA_PASS_LABEL,
     TARGET_COLOR,
     UNIFORM_ALPHA_COLOR,
     UNIFORM_ALPHA_LABEL,
+    UNIFORM_ALPHA_PASS_LABEL,
     UNIFORM_BETA_COLOR,
     UNIFORM_BETA_LABEL,
+    UNIFORM_BETA_PASS_LABEL,
 )
 from fcp_shift.reporting.style import compact_tick_label, figure_size, font_size
 from fcp_shift.reproducibility import stable_seed
@@ -50,12 +54,17 @@ def _summarize_curves(curves: dict[tuple[str, str], list], alpha, beta) -> pd.Da
     records = []
     for (weight, model), results in curves.items():
         for name, x in [
-            ("empirical_fcp", alpha), ("goal1_bound", alpha), ("goal2_bound", alpha),
-            ("goal3_fcp", beta), ("goal4_fcp", beta),
+            ("goal1_pass", alpha), ("goal2_uniform_pass", alpha),
+            ("goal3_pass", beta), ("goal4_uniform_pass", beta),
         ]:
-            values = np.stack([getattr(result, name) for result in results])
+            raw = np.asarray([getattr(result, name) for result in results], dtype=float)
+            values = (
+                np.repeat(raw[:, None], len(x), axis=1)
+                if raw.ndim == 1 else raw
+            )
             mean = values.mean(axis=0)
-            low, high = np.quantile(values, [0.1, 0.9], axis=0)
+            radius = 1.96 * np.sqrt(mean * (1.0 - mean) / max(len(values), 1))
+            low, high = np.maximum(mean - radius, 0.0), np.minimum(mean + radius, 1.0)
             records.extend(
                 {
                     "weight": weight, "model": model, "curve": name,
@@ -275,6 +284,7 @@ def _plot_grid(
     weights: list[str],
     models: list[str],
     dataset: str,
+    delta: float,
     output: Path,
 ) -> Path:
     palette = ("#5E60CE", "#2A9D8F", "#B56576", "#8D6E63")
@@ -309,41 +319,42 @@ def _plot_grid(
         forward_axis.set_title(weight.replace("_", " ").title())
 
         for model in models:
-            empirical = subset_weight[
+            fixed_alpha = subset_weight[
                 (subset_weight.model == model)
-                & (subset_weight.curve == "empirical_fcp")
+                & (subset_weight.curve == "goal1_pass")
             ].sort_values("x")
             forward_axis.plot(
-                empirical.x,
-                empirical["mean"],
+                fixed_alpha.x,
+                fixed_alpha["mean"],
                 color=model_colors[model],
                 linestyle="-",
-                linewidth=1.7,
+                linewidth=2.1,
             )
             forward_axis.fill_between(
-                empirical.x,
-                empirical.q10,
-                empirical.q90,
+                fixed_alpha.x,
+                fixed_alpha.q10,
+                fixed_alpha.q90,
                 color=model_colors[model],
                 alpha=0.06,
             )
 
-            for curve_name, color, linewidth in (
-                ("goal3_fcp", model_colors[model], 2.1),
-                ("goal4_fcp", light_color(model_colors[model]), 1.9),
+            for axis, curve_name, color, linewidth in (
+                (forward_axis, "goal2_uniform_pass", light_color(model_colors[model]), 1.9),
+                (inverse_axis, "goal3_pass", model_colors[model], 2.1),
+                (inverse_axis, "goal4_uniform_pass", light_color(model_colors[model]), 1.9),
             ):
                 curve = subset_weight[
                     (subset_weight.model == model)
                     & (subset_weight.curve == curve_name)
                 ].sort_values("x")
-                inverse_axis.plot(
+                axis.plot(
                     curve.x,
                     curve["mean"],
                     color=color,
                     linestyle="-",
                     linewidth=linewidth,
                 )
-                inverse_axis.fill_between(
+                axis.fill_between(
                     curve.x,
                     curve.q10,
                     curve.q90,
@@ -351,25 +362,10 @@ def _plot_grid(
                     alpha=0.06,
                 )
 
-        for curve_name, color in (
-            ("goal1_bound", FIXED_ALPHA_COLOR),
-            ("goal2_bound", UNIFORM_ALPHA_COLOR),
-        ):
-            bound = subset_weight[
-                (subset_weight.model == models[0])
-                & (subset_weight.curve == curve_name)
-            ].sort_values("x")
-            forward_axis.plot(
-                bound.x, bound["mean"], color=color, linewidth=2.5
+        for axis in (forward_axis, inverse_axis):
+            axis.axhline(
+                1.0 - delta, color=TARGET_COLOR, linestyle="--", linewidth=2
             )
-
-        inverse_axis.plot(
-            [0, 1],
-            [0, 1],
-            color=TARGET_COLOR,
-            linestyle="--",
-            linewidth=2,
-        )
         for axis in (forward_axis, inverse_axis):
             axis.set_xlim(0.0, 1.0)
             axis.set_ylim(0.0, 1.0)
@@ -386,8 +382,8 @@ def _plot_grid(
     middle = len(weights) // 2
     axes[0, middle].set_xlabel(r"Miscoverage $\alpha$")
     axes[1, middle].set_xlabel(r"Target FCP $\beta$")
-    axes[0, 0].set_ylabel("FCP / bound")
-    axes[1, 0].set_ylabel("Empirical FCP")
+    axes[0, 0].set_ylabel("Guarantee probability")
+    axes[1, 0].set_ylabel("Guarantee probability")
 
     model_handles = [
         Line2D(
@@ -401,9 +397,9 @@ def _plot_grid(
     ]
     axes[0, -1].legend(
         handles=[
-            Line2D([0], [0], color=EMPIRICAL_COLOR, label="Empirical FCP"),
-            Line2D([0], [0], color=FIXED_ALPHA_COLOR, linewidth=2.5, label=FIXED_ALPHA_LABEL),
-            Line2D([0], [0], color=UNIFORM_ALPHA_COLOR, linewidth=2.5, label=UNIFORM_ALPHA_LABEL),
+            Line2D([0], [0], color=TARGET_COLOR, linestyle="--", label=r"Required $1-\delta$"),
+            Line2D([0], [0], color="#555555", linewidth=2.1, label=FIXED_ALPHA_PASS_LABEL),
+            Line2D([0], [0], color="#AAAAAA", linewidth=1.9, label=UNIFORM_ALPHA_PASS_LABEL),
             *model_handles,
         ],
         fontsize=font_size("legend", 8),
@@ -411,9 +407,9 @@ def _plot_grid(
     )
     axes[1, -1].legend(
         handles=[
-            Line2D([0], [0], color=TARGET_COLOR, linestyle="--", label=r"Target $\beta$"),
-            Line2D([0], [0], color="#555555", linestyle="-", linewidth=2.1, label=FIXED_BETA_LABEL),
-            Line2D([0], [0], color="#AAAAAA", linestyle="-", linewidth=1.9, label=UNIFORM_BETA_LABEL),
+            Line2D([0], [0], color=TARGET_COLOR, linestyle="--", label=r"Required $1-\delta$"),
+            Line2D([0], [0], color="#555555", linestyle="-", linewidth=2.1, label=FIXED_BETA_PASS_LABEL),
+            Line2D([0], [0], color="#AAAAAA", linestyle="-", linewidth=1.9, label=UNIFORM_BETA_PASS_LABEL),
             *model_handles,
         ],
         fontsize=font_size("legend", 8),
@@ -487,10 +483,10 @@ def run_model_ablation(config: dict[str, Any], force: bool = False) -> None:
                     metric_rows.append(
                         {
                             "weight": weight.name, "model": model_name, "repetition": repetition,
-                            "goal1_pointwise_pass_fraction": np.mean(result.empirical_fcp <= result.goal1_bound),
-                            "goal2_uniform_pass": np.all(result.empirical_fcp <= result.goal2_bound),
-                            "goal3_pointwise_pass_fraction": np.mean(result.goal3_fcp <= beta),
-                            "goal4_uniform_pass": np.all(result.goal4_fcp <= beta),
+                            "goal1_pointwise_pass_fraction": np.mean(result.goal1_pass),
+                            "goal2_uniform_pass": result.goal2_uniform_pass,
+                            "goal3_pointwise_pass_fraction": np.mean(result.goal3_pass),
+                            "goal4_uniform_pass": result.goal4_uniform_pass,
                         }
                     )
         metrics = pd.DataFrame(metric_rows)
@@ -498,5 +494,8 @@ def run_model_ablation(config: dict[str, Any], force: bool = False) -> None:
         run.save_metrics(metrics)
         summary.to_csv(run.path / "curves_summary.csv", index=False)
         run.save_summary({"rows": len(metrics), **metrics.mean(numeric_only=True).to_dict()})
-        _plot_grid(summary, weight_names, model_names, dataset_config["name"], run.path)
+        _plot_grid(
+            summary, weight_names, model_names, dataset_config["name"],
+            float(config["fcp"]["delta"]), run.path,
+        )
         run.mark_complete()

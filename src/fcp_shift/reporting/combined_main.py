@@ -14,16 +14,15 @@ from .grouped import load_weight_runs
 from fcp_shift.weights import direction_variant
 from .labels import (
     display_dataset_name,
-    EMPIRICAL_COLOR,
     FIXED_ALPHA_COLOR,
-    FIXED_ALPHA_LABEL,
+    FIXED_ALPHA_PASS_LABEL,
     FIXED_BETA_COLOR,
-    FIXED_BETA_LABEL,
+    FIXED_BETA_PASS_LABEL,
     TARGET_COLOR,
     UNIFORM_ALPHA_COLOR,
-    UNIFORM_ALPHA_LABEL,
+    UNIFORM_ALPHA_PASS_LABEL,
     UNIFORM_BETA_COLOR,
-    UNIFORM_BETA_LABEL,
+    UNIFORM_BETA_PASS_LABEL,
 )
 from .style import figure_size, font_size
 
@@ -32,28 +31,16 @@ _PAPER_FONT_SIZE = 10.0
 _PAPER_TITLE_SIZE = 11.0
 _PAPER_LINE_WIDTH = 2.1
 _AXIS_TICKS = (0.0, 0.5, 1.0)
-def _mean_line(axis, x, values, color, label, linestyle="-") -> None:
-    values = np.asarray(values, dtype=float)
-    mean = values.mean(axis=0)
-    if values.shape[0] > 1:
-        std = values.std(axis=0, ddof=1)
-        axis.fill_between(
-            x,
-            np.maximum(mean - std, 0.0),
-            mean + std,
-            color=color,
-            alpha=0.14,
-            linewidth=0,
-            zorder=1,
-        )
+
+
+def _guarantee_line(axis, x, indicators, color, label, linestyle="-") -> None:
+    values = np.asarray(indicators, dtype=float)
+    if values.ndim == 1:
+        values = np.repeat(values[:, None], len(x), axis=1)
+    probability = values.mean(axis=0)
     axis.plot(
-        x,
-        mean,
-        color=color,
-        linewidth=_PAPER_LINE_WIDTH,
-        linestyle=linestyle,
-        label=label,
-        zorder=2,
+        x, probability, color=color, linewidth=_PAPER_LINE_WIDTH,
+        linestyle=linestyle, label=label, zorder=2,
     )
 
 
@@ -85,14 +72,19 @@ def _plot_forward(
     legend: bool,
     show_ylabel: bool,
     show_xlabel: bool,
+    delta: float,
 ) -> None:
     alpha = arrays["alpha"]
-    _mean_line(axis, alpha, arrays["empirical_fcp"], EMPIRICAL_COLOR, "Empirical FCP")
-    _mean_line(
-        axis, alpha, arrays["goal1_bound"], FIXED_ALPHA_COLOR, FIXED_ALPHA_LABEL
+    axis.axhline(
+        1.0 - delta, color=TARGET_COLOR, linewidth=_PAPER_LINE_WIDTH,
+        linestyle="--", label=r"Required $1-\delta$",
     )
-    _mean_line(
-        axis, alpha, arrays["goal2_bound"], UNIFORM_ALPHA_COLOR, UNIFORM_ALPHA_LABEL
+    _guarantee_line(
+        axis, alpha, arrays["goal1_pass"], FIXED_ALPHA_COLOR, FIXED_ALPHA_PASS_LABEL
+    )
+    _guarantee_line(
+        axis, alpha, arrays["goal2_uniform_pass"],
+        UNIFORM_ALPHA_COLOR, UNIFORM_ALPHA_PASS_LABEL
     )
     axis.set_title(title, fontsize=font_size("title", _PAPER_TITLE_SIZE), pad=3)
     if show_xlabel:
@@ -103,7 +95,7 @@ def _plot_forward(
         )
     if show_ylabel:
         axis.set_ylabel(
-            "FCP / bound", fontsize=font_size("label", _PAPER_FONT_SIZE), labelpad=2
+            "Guarantee probability", fontsize=font_size("label", _PAPER_FONT_SIZE), labelpad=2
         )
     _format_axis(axis, forward=True, y_tick_max=1.0)
     if legend:
@@ -126,18 +118,20 @@ def _plot_inverse(
     legend: bool,
     show_ylabel: bool,
     show_xlabel: bool,
+    delta: float,
 ) -> None:
     beta = arrays["beta"]
-    axis.plot(
-        beta,
-        beta,
-        color=TARGET_COLOR,
-        linewidth=_PAPER_LINE_WIDTH,
-        linestyle="--",
-        label=r"Target $\beta$",
+    axis.axhline(
+        1.0 - delta, color=TARGET_COLOR, linewidth=_PAPER_LINE_WIDTH,
+        linestyle="--", label=r"Required $1-\delta$",
     )
-    _mean_line(axis, beta, arrays["goal3_fcp"], FIXED_BETA_COLOR, FIXED_BETA_LABEL)
-    _mean_line(axis, beta, arrays["goal4_fcp"], UNIFORM_BETA_COLOR, UNIFORM_BETA_LABEL)
+    _guarantee_line(
+        axis, beta, arrays["goal3_pass"], FIXED_BETA_COLOR, FIXED_BETA_PASS_LABEL
+    )
+    _guarantee_line(
+        axis, beta, arrays["goal4_uniform_pass"],
+        UNIFORM_BETA_COLOR, UNIFORM_BETA_PASS_LABEL
+    )
     axis.set_title(title, fontsize=font_size("title", _PAPER_TITLE_SIZE), pad=3)
     if show_xlabel:
         axis.set_xlabel(
@@ -147,7 +141,7 @@ def _plot_inverse(
         )
     if show_ylabel:
         axis.set_ylabel(
-            "Empirical FCP", fontsize=font_size("label", _PAPER_FONT_SIZE), labelpad=2
+            "Guarantee probability", fontsize=font_size("label", _PAPER_FONT_SIZE), labelpad=2
         )
     _format_axis(axis, forward=False)
     if legend:
@@ -225,6 +219,8 @@ def make_covariate_transport_figure(
         curves[("transport", name)] = transport
 
     dataset_count = len(selected)
+    covariate_delta = float(covariate_config.get("fcp", {}).get("delta", 0.1))
+    transport_delta = float(transport_config.get("fcp", {}).get("delta", 0.1))
     figure, axes = plt.subplots(
         2,
         2 * dataset_count,
@@ -242,6 +238,7 @@ def make_covariate_transport_figure(
             column == 0,
             column == 0,
             False,
+            covariate_delta,
         )
         _plot_forward(
             axes[1, column],
@@ -250,6 +247,7 @@ def make_covariate_transport_figure(
             False,
             column == 0,
             column == 0,
+            transport_delta,
         )
         inverse_column = dataset_count + column
         _plot_inverse(
@@ -259,6 +257,7 @@ def make_covariate_transport_figure(
             column == 0,
             column == 0,
             False,
+            covariate_delta,
         )
         _plot_inverse(
             axes[1, inverse_column],
@@ -267,6 +266,7 @@ def make_covariate_transport_figure(
             False,
             column == 0,
             column == 0,
+            transport_delta,
         )
 
     axes[0, 0].annotate(

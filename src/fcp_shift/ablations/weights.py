@@ -21,9 +21,13 @@ from fcp_shift.experiments.common import calculate_goals, grid, stack_goal_resul
 from fcp_shift.reporting import RunDirectory
 from fcp_shift.reporting.labels import (
     FIXED_ALPHA_LABEL,
+    FIXED_ALPHA_PASS_LABEL,
     FIXED_BETA_LABEL,
+    FIXED_BETA_PASS_LABEL,
     UNIFORM_ALPHA_LABEL,
+    UNIFORM_ALPHA_PASS_LABEL,
     UNIFORM_BETA_LABEL,
+    UNIFORM_BETA_PASS_LABEL,
 )
 from fcp_shift.reporting.style import compact_tick_label, figure_size, font_size
 from fcp_shift.reproducibility import stable_seed
@@ -165,9 +169,17 @@ def _weight_curve_mean_std(
             summary["std"].fillna(0.0).to_numpy(dtype=float),
         )
     values = curves[(shift, dataset, weight)][curve_name]
+    if values.ndim == 1:
+        x_size = len(values)
+        # Uniform goals are scalar events; broadcasting happens in _plot_grid.
+        mean = np.asarray(values.mean())
+        interval = np.asarray(
+            1.96 * np.sqrt(mean * (1.0 - mean) / max(x_size, 1))
+        )
+        return mean, interval
     mean = values.mean(axis=0)
-    std = values.std(axis=0, ddof=1) if values.shape[0] > 1 else np.zeros_like(mean)
-    return mean, std
+    interval = 1.96 * np.sqrt(mean * (1.0 - mean) / max(values.shape[0], 1))
+    return mean, interval
 
 
 def _plot_grid(
@@ -176,13 +188,14 @@ def _plot_grid(
     weights: list[str],
     alpha: np.ndarray,
     beta: np.ndarray,
+    delta: float,
     output_directory: Path,
 ) -> list[Path]:
     definitions = (
-        ("goal1_bound", alpha, FIXED_ALPHA_LABEL, r"Nominal $\alpha$", "--"),
-        ("goal2_bound", alpha, UNIFORM_ALPHA_LABEL, r"Nominal $\alpha$", "--"),
-        ("goal3_fcp", beta, FIXED_BETA_LABEL, r"Target $\beta$", ":"),
-        ("goal4_fcp", beta, UNIFORM_BETA_LABEL, r"Target $\beta$", ":"),
+        ("goal1_pass", alpha, FIXED_ALPHA_PASS_LABEL),
+        ("goal2_uniform_pass", alpha, UNIFORM_ALPHA_PASS_LABEL),
+        ("goal3_pass", beta, FIXED_BETA_PASS_LABEL),
+        ("goal4_uniform_pass", beta, UNIFORM_BETA_PASS_LABEL),
     )
     shifts = (
         ("covariate_shift", "Covariate Shift"),
@@ -207,27 +220,19 @@ def _plot_grid(
             sharey=False,
         )
         for row, (shift, row_label) in enumerate(shifts):
-            for column, (
-                curve_name,
-                x,
-                title,
-                reference_label,
-                reference_style,
-            ) in enumerate(definitions):
+            for column, (curve_name, x, title) in enumerate(definitions):
                 axis = axes[row, column]
-                axis.plot(
-                    x,
-                    x,
-                    color="black",
-                    linestyle=reference_style,
-                    linewidth=2,
-                    label=reference_label,
+                axis.axhline(
+                    1.0 - delta, color="black", linestyle="--", linewidth=2,
+                    label=r"Required probability $1-\delta$",
                 )
                 for index, weight in enumerate(weights):
                     mean, std = _weight_curve_mean_std(
                         curves, shift, dataset, weight, curve_name
                     )
                     color = WEIGHT_COLORS.get(weight, plt.get_cmap("tab10")(index))
+                    mean = np.broadcast_to(mean, x.shape)
+                    std = np.broadcast_to(std, x.shape)
                     axis.fill_between(
                         x,
                         np.clip(mean - std, 0.0, 1.0),
@@ -262,18 +267,14 @@ def _plot_grid(
 
         axes[1, 0].set_xlabel(r"Miscoverage $\alpha$")
         axes[1, 2].set_xlabel(r"Target FCP $\beta$")
-        axes[0, 0].set_ylabel("FCP bound")
-        axes[1, 0].set_ylabel("FCP bound")
-        axes[0, 2].set_ylabel("Empirical FCP")
-        axes[1, 2].set_ylabel("Empirical FCP")
+        axes[0, 0].set_ylabel("Guarantee probability")
+        axes[1, 0].set_ylabel("Guarantee probability")
+        axes[0, 2].set_ylabel("Guarantee probability")
+        axes[1, 2].set_ylabel("Guarantee probability")
         legend_handles = [
             Line2D(
                 [0], [0], color="black", linestyle="--", linewidth=2,
-                label=r"Nominal $\alpha$",
-            ),
-            Line2D(
-                [0], [0], color="black", linestyle=":", linewidth=2,
-                label=r"Target $\beta$",
+                label=r"Required probability $1-\delta$",
             ),
             *[
                 Line2D(
@@ -317,20 +318,18 @@ def _curve_records(
 ) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
     definitions = {
-        "empirical_fcp": alpha,
-        "goal1_bound": alpha,
-        "goal2_bound": alpha,
-        "goal3_fcp": beta,
-        "goal4_fcp": beta,
+        "goal1_pass": alpha,
+        "goal2_uniform_pass": alpha,
+        "goal3_pass": beta,
+        "goal4_uniform_pass": beta,
     }
     for curve_name, x in definitions.items():
         values = arrays[curve_name]
-        mean = values.mean(axis=0)
-        std = (
-            values.std(axis=0, ddof=1)
-            if values.shape[0] > 1
-            else np.zeros_like(mean)
-        )
+        if values.ndim == 1:
+            mean = np.full(len(x), values.mean())
+        else:
+            mean = values.mean(axis=0)
+        std = 1.96 * np.sqrt(mean * (1.0 - mean) / max(values.shape[0], 1))
         records.extend(
             {
                 "shift": shift,
@@ -500,21 +499,13 @@ def run_weight_ablation(config: dict[str, Any], force: bool = False) -> None:
                                 "weight": base_weight.name,
                                 "repetition": repetition,
                                 "goal1_pass_fraction": float(
-                                    np.mean(
-                                        result.empirical_fcp <= result.goal1_bound
-                                    )
+                                    np.mean(result.goal1_pass)
                                 ),
-                                "goal2_uniform_pass": float(
-                                    np.all(
-                                        result.empirical_fcp <= result.goal2_bound
-                                    )
-                                ),
+                                "goal2_uniform_pass": float(result.goal2_uniform_pass),
                                 "goal3_pass_fraction": float(
-                                    np.mean(result.goal3_fcp <= beta)
+                                    np.mean(result.goal3_pass)
                                 ),
-                                "goal4_uniform_pass": float(
-                                    np.all(result.goal4_fcp <= beta)
-                                ),
+                                "goal4_uniform_pass": float(result.goal4_uniform_pass),
                             }
                         )
 
@@ -532,5 +523,5 @@ def run_weight_ablation(config: dict[str, Any], force: bool = False) -> None:
                 **metrics.mean(numeric_only=True).to_dict(),
             }
         )
-        _plot_grid(curves, datasets, weights, alpha, beta, run.path)
+        _plot_grid(curves, datasets, weights, alpha, beta, delta, run.path)
         run.mark_complete()

@@ -135,7 +135,7 @@ The runner supports:
 - linear/ridge regression or logistic regression;
 - multilayer perceptrons.
 
-The three configured weights are combined in one `2 x 3` figure named `models_weights_2x3.pdf`. Columns represent weight families; the top row contains the fixed/uniform alpha guarantees and the bottom row contains the fixed/uniform beta guarantees. Each underlying model has a distinct color, all model curves are solid, and no point markers are used. In the inverse row, darker/lighter variants of each model color distinguish the fixed/uniform beta quantities. Figure legends use the paper notation from equations 7–10 instead of Goal 1–4 names. Both rows are displayed on `[0, 1]`. This isolates model robustness from a change in the target distribution.
+The three configured weights are combined in one `2 x 3` figure named `models_weights_2x3.pdf`. Columns represent weight families. The top row reports the empirical probabilities of the fixed- and uniform-alpha guarantees; the bottom row reports the corresponding fixed- and uniform-beta guarantee probabilities. Goal 2 and Goal 4 are simultaneous events over their configured grids and therefore appear as horizontal lines. Each panel includes the required probability `1 - delta`. Each underlying model has a distinct color, all model curves are solid, and no point markers are used. Figure legends use the paper notation from equations 7–10 instead of Goal 1–4 names. Both rows are displayed on `[0, 1]`. This isolates model robustness from a change in the target distribution.
 
 ## 4. Inference-time ablation
 
@@ -173,7 +173,7 @@ The workflow compares eight weight families in both Covariate Shift and Score-Tr
 
 Arctangent and power tilt are strictly increasing in `z(x)` when `strength > 0` (before upper-tail clipping). At `strength = 0`, both give uniform weights. Arctangent is bounded, while power tilt has polynomial tails. Increasing `strength` makes test sampling more concentrated toward larger `z(x)` values.
 
-For each dataset it produces one `2 x 4` figure. The top row is Covariate Shift and the bottom row is Score-Transport Shift. Columns are the fixed-alpha, uniform-alpha, fixed-beta, and uniform-beta quantities from equations 7–10. Each panel contains the usual black reference line and one mean curve with a standard-deviation band for every weight. With a single configured dataset, the output is:
+For each dataset it produces one `2 x 4` figure. The top row is Covariate Shift and the bottom row is Score-Transport Shift. Columns report the empirical probabilities of the fixed-alpha, uniform-alpha, fixed-beta, and uniform-beta guarantees from equations 7–10. The black horizontal line is `1 - delta`; the uniform-alpha and uniform-beta probabilities are constant across their respective horizontal axes. Pointwise curves include Monte Carlo uncertainty bands. With a single configured dataset, the output is:
 
 ```text
 outputs/ablations/weight_families/seed_<seed>/

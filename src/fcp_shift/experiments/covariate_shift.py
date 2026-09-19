@@ -102,15 +102,13 @@ def run_covariate_shift(config: dict[str, Any], force: bool = False) -> None:
                         {
                             "repetition": repetition,
                             "goal1_pointwise_pass_fraction": np.mean(
-                                result.empirical_fcp <= result.goal1_bound
+                                result.goal1_pass
                             ),
-                            "goal2_uniform_pass": np.all(
-                                result.empirical_fcp <= result.goal2_bound
-                            ),
+                            "goal2_uniform_pass": result.goal2_uniform_pass,
                             "goal3_pointwise_pass_fraction": np.mean(
-                                result.goal3_fcp <= beta
+                                result.goal3_pass
                             ),
-                            "goal4_uniform_pass": np.all(result.goal4_fcp <= beta),
+                            "goal4_uniform_pass": result.goal4_uniform_pass,
                         }
                     )
                 arrays = stack_goal_results(results)
@@ -125,6 +123,10 @@ def run_covariate_shift(config: dict[str, Any], force: bool = False) -> None:
                         "uniform_constants": results[0].uniform,
                     }
                 )
-                plot_goal_results(run.path, alpha, beta, arrays, f"{dataset.name} — {fitted_weight.name}")
+                plot_goal_results(
+                    run.path, alpha, beta, arrays,
+                    f"{dataset.name} — {fitted_weight.name}",
+                    float(config["fcp"]["delta"]),
+                )
                 run.mark_complete()
                 LOGGER.info("Completed %s", run.path)

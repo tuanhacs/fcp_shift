@@ -118,15 +118,13 @@ def run_transport_shift(config: dict[str, Any], force: bool = False) -> None:
                             {
                                 "repetition": repetition,
                                 "goal1_pointwise_pass_fraction": np.mean(
-                                    result.empirical_fcp <= result.goal1_bound
+                                    result.goal1_pass
                                 ),
-                                "goal2_uniform_pass": np.all(
-                                    result.empirical_fcp <= result.goal2_bound
-                                ),
+                                "goal2_uniform_pass": result.goal2_uniform_pass,
                                 "goal3_pointwise_pass_fraction": np.mean(
-                                    result.goal3_fcp <= beta
+                                    result.goal3_pass
                                 ),
-                                "goal4_uniform_pass": np.all(result.goal4_fcp <= beta),
+                                "goal4_uniform_pass": result.goal4_uniform_pass,
                             }
                         )
                     arrays = stack_goal_results(results)
@@ -147,6 +145,7 @@ def run_transport_shift(config: dict[str, Any], force: bool = False) -> None:
                         beta,
                         arrays,
                         f"{dataset.name} — {base_weight.name}, rho={rho:.2f}",
+                        float(config["fcp"]["delta"]),
                     )
                     run.mark_complete()
                     LOGGER.info("Completed %s", run.path)

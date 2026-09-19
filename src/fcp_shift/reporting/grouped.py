@@ -36,6 +36,10 @@ CURVE_NAMES = (
     "goal4_alpha",
     "goal3_fcp",
     "goal4_fcp",
+    "goal1_pass",
+    "goal2_uniform_pass",
+    "goal3_pass",
+    "goal4_uniform_pass",
 )
 
 
@@ -56,8 +60,19 @@ def load_weight_runs(weight_directory: Path) -> dict[str, np.ndarray] | None:
                 beta, current_beta
             ):
                 raise ValueError(f"Incompatible grids in {path}")
+            derived = {
+                "goal1_pass": np.asarray(data["empirical_fcp"] <= data["goal1_bound"] + 1e-12),
+                "goal2_uniform_pass": np.all(
+                    data["empirical_fcp"] <= data["goal2_bound"] + 1e-12, axis=1
+                ),
+                "goal3_pass": np.asarray(data["goal3_fcp"] <= current_beta + 1e-12),
+                "goal4_uniform_pass": np.all(
+                    data["goal4_fcp"] <= current_beta + 1e-12, axis=1
+                ),
+            }
             for name in CURVE_NAMES:
-                combined[name].append(np.asarray(data[name], dtype=float))
+                value = data[name] if name in data.files else derived[name]
+                combined[name].append(np.asarray(value, dtype=float))
     return {
         "alpha": alpha,
         "beta": beta,
@@ -79,10 +94,35 @@ def _plot_mean_band(axis, x, values, color, label, linestyle="-"):
     axis.plot(x, mean, color=color, linewidth=2, linestyle=linestyle, label=label)
 
 
+def _plot_probability(axis, x, indicators, color, label):
+    values = np.asarray(indicators, dtype=float)
+    if values.ndim == 1:
+        values = np.repeat(values[:, None], len(x), axis=1)
+    probability = values.mean(axis=0)
+    axis.plot(x, probability, color=color, linewidth=2, label=label)
+
+
+def _guarantee_values(arrays: dict[str, np.ndarray], key: str) -> np.ndarray:
+    if key in arrays:
+        return np.asarray(arrays[key], dtype=float)
+    if key == "goal1_pass":
+        return arrays["empirical_fcp"] <= arrays["goal1_bound"] + 1e-12
+    if key == "goal2_uniform_pass":
+        return np.all(
+            arrays["empirical_fcp"] <= arrays["goal2_bound"] + 1e-12, axis=1
+        )
+    if key == "goal3_pass":
+        return arrays["goal3_fcp"] <= arrays["beta"] + 1e-12
+    if key == "goal4_uniform_pass":
+        return np.all(arrays["goal4_fcp"] <= arrays["beta"] + 1e-12, axis=1)
+    raise KeyError(key)
+
+
 def plot_grouped_weights(
     results: dict[str, dict[str, np.ndarray]],
     output_directory: str | Path,
     title: str,
+    delta: float = 0.1,
 ) -> None:
     """Create figures with every available weight shown in the same panels."""
     if not results:
@@ -105,26 +145,23 @@ def plot_grouped_weights(
 
     for goal in (1, 2):
         figure, axis = plt.subplots(figsize=figure_size((8, 5)))
+        axis.axhline(
+            1.0 - delta, color="#111111", linestyle="--", linewidth=2,
+            label=r"Required probability $1-\delta$",
+        )
         for index, (weight, arrays) in enumerate(results.items()):
             color = _color(weight, index)
-            _plot_mean_band(
+            key = "goal1_pass" if goal == 1 else "goal2_uniform_pass"
+            _plot_probability(
                 axis,
                 alpha,
-                arrays[f"goal{goal}_bound"],
+                _guarantee_values(arrays, key),
                 color,
-                f"{weight} bound",
-            )
-            axis.plot(
-                alpha,
-                np.mean(arrays["empirical_fcp"], axis=0),
-                color=color,
-                linewidth=1.8,
-                linestyle="--",
-                label=f"{weight} empirical FCP",
+                weight,
             )
         axis.set_title(f"{title} — Goal {goal}")
         axis.set_xlabel(r"Miscoverage level $\alpha$")
-        axis.set_ylabel("FCP / bound")
+        axis.set_ylabel("Guarantee probability")
         axis.set_xlim(0.0, 1.0)
         axis.set_ylim(bottom=0.0)
         set_publication_ticks(axis)
@@ -139,18 +176,22 @@ def plot_grouped_weights(
 
     for goal in (3, 4):
         figure, axis = plt.subplots(figsize=figure_size((8, 5)))
-        axis.plot(beta, beta, color="#111111", linestyle="--", linewidth=2, label=r"Target $\beta$")
+        axis.axhline(
+            1.0 - delta, color="#111111", linestyle="--", linewidth=2,
+            label=r"Required probability $1-\delta$",
+        )
         for index, (weight, arrays) in enumerate(results.items()):
-            _plot_mean_band(
+            key = "goal3_pass" if goal == 3 else "goal4_uniform_pass"
+            _plot_probability(
                 axis,
                 beta,
-                arrays[f"goal{goal}_fcp"],
+                _guarantee_values(arrays, key),
                 _color(weight, index),
                 weight,
             )
         axis.set_title(f"{title} — Goal {goal}")
         axis.set_xlabel(r"Target FCP $\beta$")
-        axis.set_ylabel("Empirical FCP")
+        axis.set_ylabel("Guarantee probability")
         axis.set_xlim(0.0, 1.0)
         axis.set_ylim(0.0, 1.0)
         set_publication_ticks(axis)
@@ -243,7 +284,10 @@ def make_grouped_figures(config: dict[str, Any]) -> list[Path]:
             title = display_dataset_name(dataset_name)
             if rho is not None:
                 title = f"{title} — rho={rho:.2f}"
-            plot_grouped_weights(results, destination, title)
+            plot_grouped_weights(
+                results, destination, title,
+                float(config["fcp"]["delta"]),
+            )
             generated.extend(sorted(destination.glob("grouped_weights_*.pdf")))
             LOGGER.info(
                 "Grouped %d weights for dataset=%s rho=%s", len(results), dataset_name, rho

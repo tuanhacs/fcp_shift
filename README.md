@@ -68,6 +68,8 @@ bash scripts/run_covariate_shift.sh
 
 Under oracle covariate shift, Goals 1–4 use the identity upper bound `G(eta) <= eta`. The implementation does not re-estimate `G` in this experiment.
 
+The reported main curves estimate the probability that each guarantee holds over repeated, independent calibration/test draws. Goals 1 and 3 are pointwise probability curves over `alpha` and `beta`. Goals 2 and 4 are simultaneous events over the configured grids and are therefore displayed as horizontal probability lines. Every figure includes the required level `1 - delta`. Raw FCP, bounds, and selected levels remain available in `curves.npz`.
+
 The exponential tilt is fitted on an independent auxiliary subset (`shift.auxiliary_fraction`, default `0.2`) rather than on calibration/test scores. The resulting feature-only weight is clipped and normalized on the source pool; test pairs are resampled in proportion to this weight. Rerun older output directories with `--force` after this change, since saved curves use the previous shift construction.
 
 ### Stratified score-transport shift

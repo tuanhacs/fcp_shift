@@ -43,6 +43,7 @@ def _plot_dataset(
     weight_curves: dict[str, dict[str, np.ndarray]],
     dkw_bound: np.ndarray,
     cojer_bound: np.ndarray,
+    delta: float,
     output: Path,
 ) -> None:
     display_dataset = publication_dataset_name(dataset)
@@ -57,14 +58,23 @@ def _plot_dataset(
         "power_tilt": "#4C5B9B",
     }
     figure, axis = plt.subplots(figsize=figure_size((8, 5)))
+    axis.axhline(
+        1.0 - delta, color="black", linestyle="--", linewidth=2,
+        label=r"Required probability $1-\delta$",
+    )
     for index, (weight, curves) in enumerate(weight_curves.items()):
         color = colors.get(weight, plt.get_cmap("tab10")(index))
-        axis.plot(alpha, curves["forward"].mean(axis=0), color=color, linestyle="--", label=f"Empirical FCP — {weight}")
-    axis.plot(alpha, dkw_bound, color="#6A3D9A", linewidth=2.3, label="DKW bound")
-    axis.plot(alpha, cojer_bound, color="#E31A1C", linewidth=2.3, label="CoJER bound")
+        axis.plot(
+            alpha, curves["dkw_forward_pass"].mean(axis=0), color=color,
+            linestyle="-", label=f"DKW — {weight}",
+        )
+        axis.plot(
+            alpha, curves["cojer_forward_pass"].mean(axis=0), color=color,
+            linestyle=":", linewidth=2.2, label=f"CoJER — {weight}",
+        )
     axis.set(
         xlabel=r"Miscoverage $\alpha$",
-        ylabel="Ordinary empirical FCP / bound",
+        ylabel="Guarantee probability",
         title=f"{display_dataset}: baselines under shift",
     )
     axis.set_xlim(0.0, 1.0)
@@ -77,14 +87,17 @@ def _plot_dataset(
     plt.close(figure)
 
     figure, axis = plt.subplots(figsize=figure_size((8, 5)))
-    axis.plot(beta, beta, color="black", linestyle="--", linewidth=2, label=r"Target $\beta$")
+    axis.axhline(
+        1.0 - delta, color="black", linestyle="--", linewidth=2,
+        label=r"Required probability $1-\delta$",
+    )
     for index, (weight, curves) in enumerate(weight_curves.items()):
         color = colors.get(weight, plt.get_cmap("tab10")(index))
-        axis.plot(beta, curves["dkw_inverse"].mean(axis=0), color=color, linestyle="-", label=f"DKW — {weight}")
-        axis.plot(beta, curves["cojer_inverse"].mean(axis=0), color=color, linestyle=":", linewidth=2.2, label=f"CoJER — {weight}")
+        axis.plot(beta, curves["dkw_inverse_pass"].mean(axis=0), color=color, linestyle="-", label=f"DKW — {weight}")
+        axis.plot(beta, curves["cojer_inverse_pass"].mean(axis=0), color=color, linestyle=":", linewidth=2.2, label=f"CoJER — {weight}")
     axis.set(
         xlabel=r"Target FCP $\beta$",
-        ylabel="Ordinary empirical FCP",
+        ylabel="Guarantee probability",
         title=f"{display_dataset}: inverse baselines under shift",
     )
     axis.set_xlim(0.0, 1.0)
@@ -132,7 +145,10 @@ def run_baseline_ablation(config: dict[str, Any], force: bool = False) -> None:
         for dataset_config in config["datasets"]:
             problem = prepare_scored_problem(dataset_config, config["model"])
             curves: dict[str, dict[str, list[np.ndarray]]] = defaultdict(
-                lambda: {"forward": [], "dkw_inverse": [], "cojer_inverse": []}
+                lambda: {
+                    "dkw_forward_pass": [], "cojer_forward_pass": [],
+                    "dkw_inverse_pass": [], "cojer_inverse_pass": [],
+                }
             )
             for weight_config in config["weights"]:
                 weight = fit_weight(
@@ -154,29 +170,37 @@ def run_baseline_ablation(config: dict[str, Any], force: bool = False) -> None:
                     empirical = fcp_curve(ordinary_p, alpha)
                     empirical_dkw_inverse = fcp_at_levels(ordinary_p, dkw_alpha)
                     empirical_cojer_inverse = fcp_at_levels(ordinary_p, cojer_alpha)
-                    curves[weight.name]["forward"].append(empirical)
-                    curves[weight.name]["dkw_inverse"].append(empirical_dkw_inverse)
-                    curves[weight.name]["cojer_inverse"].append(empirical_cojer_inverse)
+                    dkw_forward_pass = empirical <= dkw_bound + 1e-12
+                    cojer_forward_pass = empirical <= cojer_bound + 1e-12
+                    dkw_inverse_pass = empirical_dkw_inverse <= beta + 1e-12
+                    cojer_inverse_pass = empirical_cojer_inverse <= beta + 1e-12
+                    curves[weight.name]["dkw_forward_pass"].append(dkw_forward_pass)
+                    curves[weight.name]["cojer_forward_pass"].append(cojer_forward_pass)
+                    curves[weight.name]["dkw_inverse_pass"].append(dkw_inverse_pass)
+                    curves[weight.name]["cojer_inverse_pass"].append(cojer_inverse_pass)
                     row = {
                         "dataset": dataset_config["name"], "weight": weight.name,
                         "repetition": repetition, "weight_bound": weight.bound,
-                        "dkw_forward_pass": float(np.all(empirical <= dkw_bound + 1e-12)),
-                        "cojer_forward_pass": float(np.all(empirical <= cojer_bound + 1e-12)),
+                        "dkw_forward_pass": float(np.all(dkw_forward_pass)),
+                        "cojer_forward_pass": float(np.all(cojer_forward_pass)),
                         "dkw_forward_max_violation": float(np.max(empirical - dkw_bound)),
                         "cojer_forward_max_violation": float(np.max(empirical - cojer_bound)),
-                        "dkw_inverse_pass": float(np.all(empirical_dkw_inverse <= beta + 1e-12)),
-                        "cojer_inverse_pass": float(np.all(empirical_cojer_inverse <= beta + 1e-12)),
+                        "dkw_inverse_pass": float(np.all(dkw_inverse_pass)),
+                        "cojer_inverse_pass": float(np.all(cojer_inverse_pass)),
                         "dkw_inverse_max_violation": float(np.max(empirical_dkw_inverse - beta)),
                         "cojer_inverse_max_violation": float(np.max(empirical_cojer_inverse - beta)),
                     }
                     metric_rows.append(row)
             stacked = {
-                weight: {name: np.stack(values) for name, values in values_by_name.items()}
+                weight: {
+                    name: np.stack(values).astype(float)
+                    for name, values in values_by_name.items()
+                }
                 for weight, values_by_name in curves.items()
             }
             for weight_name, values_by_name in stacked.items():
                 for curve_name, values in values_by_name.items():
-                    x_grid = alpha if curve_name == "forward" else beta
+                    x_grid = alpha if "forward" in curve_name else beta
                     mean = values.mean(axis=0)
                     low, high = np.quantile(values, [0.1, 0.9], axis=0)
                     curve_rows.extend(
@@ -189,7 +213,8 @@ def run_baseline_ablation(config: dict[str, Any], force: bool = False) -> None:
                         for index in range(len(x_grid))
                     )
             _plot_dataset(
-                dataset_config["name"], alpha, beta, stacked, dkw_bound, cojer_bound, run.path
+                dataset_config["name"], alpha, beta, stacked, dkw_bound,
+                cojer_bound, delta, run.path
             )
         metrics = pd.DataFrame(metric_rows)
         aggregation = metrics.groupby(["dataset", "weight"], as_index=False).agg(
