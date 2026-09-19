@@ -71,6 +71,7 @@ baselines:
   cojer_k_max: null
 fcp:
   delta: 0.1
+  delta_grid: { values: [0.01, 0.025, 0.05, 0.1, 0.2] }
   alpha_grid: { start: 0.0, stop: 1.0, points: 201 }
   beta_grid: { start: 0.0, stop: 1.0, points: 201 }
 output: { root: outputs }

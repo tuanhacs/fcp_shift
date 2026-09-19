@@ -42,7 +42,9 @@ from fcp_shift.reporting.labels import (
     UNIFORM_BETA_LABEL,
     UNIFORM_BETA_PASS_LABEL,
 )
-from fcp_shift.reporting.style import compact_tick_label, figure_size, font_size
+from fcp_shift.reporting.style import (
+    compact_tick_label, figure_size, font_size, set_probability_limits,
+)
 from fcp_shift.reproducibility import stable_seed
 from fcp_shift.shifts import sample_covariate_shift
 from fcp_shift.weights import fit_weight
@@ -317,6 +319,8 @@ def _plot_grid(
         subset_weight = summary[summary.weight == weight]
         forward_axis, inverse_axis = axes[0, column], axes[1, column]
         forward_axis.set_title(weight.replace("_", " ").title())
+        forward_probabilities = []
+        inverse_probabilities = []
 
         for model in models:
             fixed_alpha = subset_weight[
@@ -330,6 +334,7 @@ def _plot_grid(
                 linestyle="-",
                 linewidth=2.1,
             )
+            forward_probabilities.append(fixed_alpha["mean"].to_numpy())
             forward_axis.fill_between(
                 fixed_alpha.x,
                 fixed_alpha.q10,
@@ -354,6 +359,10 @@ def _plot_grid(
                     linestyle="-",
                     linewidth=linewidth,
                 )
+                if axis is forward_axis:
+                    forward_probabilities.append(curve["mean"].to_numpy())
+                else:
+                    inverse_probabilities.append(curve["mean"].to_numpy())
                 axis.fill_between(
                     curve.x,
                     curve.q10,
@@ -366,9 +375,17 @@ def _plot_grid(
             axis.axhline(
                 1.0 - delta, color=TARGET_COLOR, linestyle="--", linewidth=2
             )
-        for axis in (forward_axis, inverse_axis):
-            axis.set_xlim(0.0, 1.0)
-            axis.set_ylim(0.0, 1.0)
+        forward_x = subset_weight[
+            subset_weight.curve == "goal1_pass"
+        ].sort_values("x").x.unique()
+        inverse_x = subset_weight[
+            subset_weight.curve == "goal3_pass"
+        ].sort_values("x").x.unique()
+        for axis, x, probabilities in (
+            (forward_axis, forward_x, forward_probabilities),
+            (inverse_axis, inverse_x, inverse_probabilities),
+        ):
+            set_probability_limits(axis, x, 1.0 - delta, *probabilities)
             set_publication_ticks(axis)
             axis.yaxis.set_major_formatter(
                 FuncFormatter(

@@ -126,38 +126,32 @@ def _saved_baseline_curves(
     for weight in weights:
         result[weight] = {}
         for curve in (
-            "dkw_forward_pass", "cojer_forward_pass",
-            "dkw_inverse_pass", "cojer_inverse_pass",
+            "dkw_forward_pass_rate", "cojer_forward_pass_rate",
+            "dkw_inverse_pass_rate", "cojer_inverse_pass_rate",
         ):
             subset = summary[
                 (summary["dataset"] == dataset)
                 & (summary["weight"] == weight)
                 & (summary["curve"] == curve)
-            ].sort_values("x")
+            ].sort_values("delta")
             if subset.empty:
                 raise ValueError(f"Missing saved baseline curve for {dataset}/{weight}/{curve}")
-            result[weight][curve] = subset["mean"].to_numpy(dtype=float)[None, :]
+            result[weight][curve] = subset["pass_rate"].to_numpy(dtype=float)
     return result
 
 
 def _replot_baselines(config: dict[str, Any]) -> list[Path]:
     generated = []
-    alpha = grid(config["fcp"]["alpha_grid"])
-    beta = grid(config["fcp"]["beta_grid"])
     datasets = [item["name"] for item in config["datasets"]]
     weights = [item["name"] for item in config["weights"]]
     for seed in config["experiment"]["seeds"]:
         run = scoped_ablation_path(_root(config), "baselines", seed, config)
         summary = pd.read_csv(_required(run / "baseline_curves_summary.csv"))
         with np.load(_required(run / "curves.npz")) as arrays:
-            dkw_bound = np.asarray(arrays["dkw_bound"], dtype=float)
-            cojer_bound = np.asarray(arrays["cojer_bound"], dtype=float)
+            delta_grid = np.asarray(arrays["delta"], dtype=float)
         for dataset in datasets:
             curves = _saved_baseline_curves(summary, dataset, weights)
-            _plot_dataset(
-                dataset, alpha, beta, curves, dkw_bound, cojer_bound,
-                float(config["fcp"]["delta"]), run,
-            )
+            _plot_dataset(dataset, delta_grid, curves, run)
             generated.extend(
                 [
                     run / f"baselines_forward_{dataset}.pdf",

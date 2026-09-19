@@ -29,7 +29,9 @@ from fcp_shift.reporting.labels import (
     UNIFORM_BETA_LABEL,
     UNIFORM_BETA_PASS_LABEL,
 )
-from fcp_shift.reporting.style import compact_tick_label, figure_size, font_size
+from fcp_shift.reporting.style import (
+    compact_tick_label, figure_size, font_size, set_probability_limits,
+)
 from fcp_shift.reproducibility import stable_seed
 from fcp_shift.shifts import (
     build_score_transport, prepare_shift_problem, sample_covariate_shift,
@@ -226,6 +228,7 @@ def _plot_grid(
                     1.0 - delta, color="black", linestyle="--", linewidth=2,
                     label=r"Required probability $1-\delta$",
                 )
+                plotted_probabilities = []
                 for index, weight in enumerate(weights):
                     mean, std = _weight_curve_mean_std(
                         curves, shift, dataset, weight, curve_name
@@ -233,6 +236,7 @@ def _plot_grid(
                     color = WEIGHT_COLORS.get(weight, plt.get_cmap("tab10")(index))
                     mean = np.broadcast_to(mean, x.shape)
                     std = np.broadcast_to(std, x.shape)
+                    plotted_probabilities.append(mean)
                     axis.fill_between(
                         x,
                         np.clip(mean - std, 0.0, 1.0),
@@ -244,8 +248,9 @@ def _plot_grid(
                     axis.plot(x, mean, color=color, linewidth=2, label=weight)
                 if row == 0:
                     axis.set_title(title)
-                axis.set_xlim(0.0, 1.0)
-                axis.set_ylim(0.0, 1.0)
+                set_probability_limits(
+                    axis, x, 1.0 - delta, *plotted_probabilities
+                )
                 set_publication_ticks(axis)
                 axis.yaxis.set_major_formatter(
                     FuncFormatter(

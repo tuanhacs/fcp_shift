@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from .labels import display_dataset_name
-from .style import figure_size, font_size, set_publication_ticks
+from .style import figure_size, font_size, set_probability_limits, set_publication_ticks
 from fcp_shift.weights import direction_variant
 from fcp_shift.reproducibility import stable_seed
 
@@ -100,6 +100,7 @@ def _plot_probability(axis, x, indicators, color, label):
         values = np.repeat(values[:, None], len(x), axis=1)
     probability = values.mean(axis=0)
     axis.plot(x, probability, color=color, linewidth=2, label=label)
+    return probability
 
 
 def _guarantee_values(arrays: dict[str, np.ndarray], key: str) -> np.ndarray:
@@ -149,21 +150,23 @@ def plot_grouped_weights(
             1.0 - delta, color="#111111", linestyle="--", linewidth=2,
             label=r"Required probability $1-\delta$",
         )
+        plotted_probabilities = []
         for index, (weight, arrays) in enumerate(results.items()):
             color = _color(weight, index)
             key = "goal1_pass" if goal == 1 else "goal2_uniform_pass"
-            _plot_probability(
+            plotted_probabilities.append(_plot_probability(
                 axis,
                 alpha,
                 _guarantee_values(arrays, key),
                 color,
                 weight,
-            )
+            ))
         axis.set_title(f"{title} — Goal {goal}")
         axis.set_xlabel(r"Miscoverage level $\alpha$")
         axis.set_ylabel("Guarantee probability")
-        axis.set_xlim(0.0, 1.0)
-        axis.set_ylim(bottom=0.0)
+        set_probability_limits(
+            axis, alpha, 1.0 - delta, *plotted_probabilities
+        )
         set_publication_ticks(axis)
         axis.grid(alpha=0.25)
         axis.legend(fontsize=font_size("legend", 8), ncol=2)
@@ -180,20 +183,22 @@ def plot_grouped_weights(
             1.0 - delta, color="#111111", linestyle="--", linewidth=2,
             label=r"Required probability $1-\delta$",
         )
+        plotted_probabilities = []
         for index, (weight, arrays) in enumerate(results.items()):
             key = "goal3_pass" if goal == 3 else "goal4_uniform_pass"
-            _plot_probability(
+            plotted_probabilities.append(_plot_probability(
                 axis,
                 beta,
                 _guarantee_values(arrays, key),
                 _color(weight, index),
                 weight,
-            )
+            ))
         axis.set_title(f"{title} — Goal {goal}")
         axis.set_xlabel(r"Target FCP $\beta$")
         axis.set_ylabel("Guarantee probability")
-        axis.set_xlim(0.0, 1.0)
-        axis.set_ylim(0.0, 1.0)
+        set_probability_limits(
+            axis, beta, 1.0 - delta, *plotted_probabilities
+        )
         set_publication_ticks(axis)
         axis.grid(alpha=0.25)
         axis.legend(fontsize=font_size("legend", 9))

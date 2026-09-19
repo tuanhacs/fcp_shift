@@ -116,3 +116,34 @@ def set_publication_ticks(
         axis.yaxis.set_major_locator(FixedLocator(ticks))
         axis.yaxis.set_major_formatter(FuncFormatter(compact_tick_label))
     axis.minorticks_off()
+
+
+def set_probability_limits(
+    axis: Axes,
+    x: np.ndarray,
+    required_probability: float | np.ndarray,
+    *probability_values: np.ndarray,
+    trim_unit_interval: bool = True,
+) -> None:
+    """Zoom a pass-rate panel around its theoretically relevant upper range."""
+    x = np.asarray(x, dtype=float)
+    x_low, x_high = float(np.min(x)), float(np.max(x))
+    if trim_unit_interval and x_low <= 0.0 and x_high >= 1.0:
+        width = x_high - x_low
+        x_low += 0.025 * width
+        x_high -= 0.025 * width
+    axis.set_xlim(x_low, x_high)
+    axis.xaxis.set_major_locator(LinearLocator(3))
+    axis.xaxis.set_major_formatter(FuncFormatter(compact_tick_label))
+
+    candidates = [np.asarray(required_probability, dtype=float).reshape(-1)]
+    candidates.extend(np.asarray(value, dtype=float).reshape(-1) for value in probability_values)
+    finite = np.concatenate(candidates)
+    finite = finite[np.isfinite(finite)]
+    minimum = float(np.min(finite)) if len(finite) else 0.9
+    # Leave visible room below the lowest reference/curve and a small amount
+    # above one so curves equal to one are not hidden by the top spine.
+    y_low = max(0.0, np.floor((minimum - 0.035) * 20.0) / 20.0)
+    axis.set_ylim(y_low, 1.01)
+    axis.yaxis.set_major_locator(LinearLocator(3))
+    axis.yaxis.set_major_formatter(FuncFormatter(compact_tick_label))

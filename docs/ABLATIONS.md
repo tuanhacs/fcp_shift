@@ -198,7 +198,9 @@ This implementation follows the intended notebook experiment exactly:
 1. Generate test data under covariate shift.
 2. Ignore weights when constructing ordinary conformal p-values.
 3. Compute the empirical FCP from those ordinary p-values.
-4. Compare that ordinary empirical FCP with DKW and CoJER.
+4. For each configured `delta`, test whether the DKW and CoJER bounds hold simultaneously over the complete alpha or beta grid.
+
+The baseline figures use `delta` on the horizontal axis. Their vertical axis is the Monte Carlo pass rate of the corresponding uniform event, and the reference curve is `1 - delta`. The default grid is `[0.01, 0.025, 0.05, 0.1, 0.2]` and can be changed through `fcp.delta_grid`.
 
 Weighted FCP is never used for DKW/CoJER pass rates or violations. This choice is recorded in `metadata.json` as:
 
@@ -218,7 +220,7 @@ baseline_comparison_table.csv
 baseline_curves_summary.csv
 ```
 
-The full configuration covers six paper datasets and five weight families. The table reports forward and inverse pass rates and mean maximum violations for every dataset-weight pair. DKW/CoJER Monte Carlo calibration sizes are controlled in YAML. Increase them for final paper runs and keep the random seed fixed.
+The full configuration covers six paper datasets and five weight families. The table reports forward and inverse pass rates and mean maximum violations for every dataset-weight-delta combination. DKW/CoJER Monte Carlo calibration sizes are controlled in YAML. Increase them for final paper runs and keep the random seed fixed.
 
 ## 7. Efficiency versus FCP bound
 

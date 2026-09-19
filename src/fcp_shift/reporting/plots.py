@@ -11,7 +11,7 @@ import pandas as pd
 from matplotlib.ticker import FixedLocator, FuncFormatter, FormatStrFormatter
 
 from .labels import GOAL_LABELS, GOAL_PASS_LABELS
-from .style import figure_size, font_size, set_publication_ticks
+from .style import figure_size, font_size, set_probability_limits, set_publication_ticks
 
 
 COLORS = {
@@ -57,6 +57,7 @@ def _probability_line(axis, x, indicators, label, color, *, linestyle="-"):
         x, probability, color=color, linewidth=2,
         linestyle=linestyle, label=label,
     )
+    return probability
 
 
 def plot_goal_results(
@@ -75,10 +76,10 @@ def plot_goal_results(
         1.0 - delta, color=COLORS["empirical"], linestyle="--", linewidth=2,
         label=r"Required probability $1-\delta$",
     )
-    _probability_line(
+    goal1_probability = _probability_line(
         axis, alpha, arrays["goal1_pass"], GOAL_PASS_LABELS[1], COLORS["goal1"]
     )
-    _probability_line(
+    goal2_probability = _probability_line(
         axis, alpha, arrays["goal2_uniform_pass"], GOAL_PASS_LABELS[2], COLORS["goal2"]
     )
     axis.set(
@@ -86,8 +87,9 @@ def plot_goal_results(
         ylabel="Guarantee probability",
         title=title_suffix,
     )
-    axis.set_xlim(0.0, 1.0)
-    axis.set_ylim(0.0, 1.0)
+    set_probability_limits(
+        axis, alpha, 1.0 - delta, goal1_probability, goal2_probability
+    )
     set_publication_ticks(axis)
     axis.grid(alpha=0.25)
     axis.legend()
@@ -100,10 +102,10 @@ def plot_goal_results(
         1.0 - delta, color=COLORS["empirical"], linestyle="--", linewidth=2,
         label=r"Required probability $1-\delta$",
     )
-    _probability_line(
+    goal3_probability = _probability_line(
         axis, beta, arrays["goal3_pass"], GOAL_PASS_LABELS[3], COLORS["goal3"]
     )
-    _probability_line(
+    goal4_probability = _probability_line(
         axis, beta, arrays["goal4_uniform_pass"], GOAL_PASS_LABELS[4], COLORS["goal4"]
     )
     axis.set(
@@ -111,8 +113,9 @@ def plot_goal_results(
         ylabel="Guarantee probability",
         title=title_suffix,
     )
-    axis.set_xlim(0.0, 1.0)
-    axis.set_ylim(0.0, 1.0)
+    set_probability_limits(
+        axis, beta, 1.0 - delta, goal3_probability, goal4_probability
+    )
     set_publication_ticks(axis)
     axis.grid(alpha=0.25)
     axis.legend()

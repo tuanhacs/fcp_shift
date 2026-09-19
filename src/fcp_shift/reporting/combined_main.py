@@ -24,7 +24,7 @@ from .labels import (
     UNIFORM_BETA_COLOR,
     UNIFORM_BETA_PASS_LABEL,
 )
-from .style import figure_size, font_size
+from .style import figure_size, font_size, set_probability_limits
 
 
 _PAPER_FONT_SIZE = 10.0
@@ -33,7 +33,7 @@ _PAPER_LINE_WIDTH = 2.1
 _AXIS_TICKS = (0.0, 0.5, 1.0)
 
 
-def _guarantee_line(axis, x, indicators, color, label, linestyle="-") -> None:
+def _guarantee_line(axis, x, indicators, color, label, linestyle="-") -> np.ndarray:
     values = np.asarray(indicators, dtype=float)
     if values.ndim == 1:
         values = np.repeat(values[:, None], len(x), axis=1)
@@ -42,6 +42,7 @@ def _guarantee_line(axis, x, indicators, color, label, linestyle="-") -> None:
         x, probability, color=color, linewidth=_PAPER_LINE_WIDTH,
         linestyle=linestyle, label=label, zorder=2,
     )
+    return probability
 
 
 def _format_axis(axis, *, forward: bool, y_tick_max: float = 1.0) -> None:
@@ -79,10 +80,10 @@ def _plot_forward(
         1.0 - delta, color=TARGET_COLOR, linewidth=_PAPER_LINE_WIDTH,
         linestyle="--", label=r"Required $1-\delta$",
     )
-    _guarantee_line(
+    fixed_probability = _guarantee_line(
         axis, alpha, arrays["goal1_pass"], FIXED_ALPHA_COLOR, FIXED_ALPHA_PASS_LABEL
     )
-    _guarantee_line(
+    uniform_probability = _guarantee_line(
         axis, alpha, arrays["goal2_uniform_pass"],
         UNIFORM_ALPHA_COLOR, UNIFORM_ALPHA_PASS_LABEL
     )
@@ -98,6 +99,9 @@ def _plot_forward(
             "Guarantee probability", fontsize=font_size("label", _PAPER_FONT_SIZE), labelpad=2
         )
     _format_axis(axis, forward=True, y_tick_max=1.0)
+    set_probability_limits(
+        axis, alpha, 1.0 - delta, fixed_probability, uniform_probability
+    )
     if legend:
         axis.legend(
             fontsize=font_size("legend", 10.0),
@@ -125,10 +129,10 @@ def _plot_inverse(
         1.0 - delta, color=TARGET_COLOR, linewidth=_PAPER_LINE_WIDTH,
         linestyle="--", label=r"Required $1-\delta$",
     )
-    _guarantee_line(
+    fixed_probability = _guarantee_line(
         axis, beta, arrays["goal3_pass"], FIXED_BETA_COLOR, FIXED_BETA_PASS_LABEL
     )
-    _guarantee_line(
+    uniform_probability = _guarantee_line(
         axis, beta, arrays["goal4_uniform_pass"],
         UNIFORM_BETA_COLOR, UNIFORM_BETA_PASS_LABEL
     )
@@ -144,6 +148,9 @@ def _plot_inverse(
             "Guarantee probability", fontsize=font_size("label", _PAPER_FONT_SIZE), labelpad=2
         )
     _format_axis(axis, forward=False)
+    set_probability_limits(
+        axis, beta, 1.0 - delta, fixed_probability, uniform_probability
+    )
     if legend:
         axis.legend(
             fontsize=font_size("legend", 10.0),
