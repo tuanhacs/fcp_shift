@@ -37,8 +37,9 @@ models:
   # - {name: mlp, seed: 2026, hidden_layer_sizes: [100, 50], alpha: 0.0001, max_iter: 300, early_stopping: true, classification_score: log_margin}
 weights:
   - { name: exponential, strength: 0.35, clip_quantile: 0.995, ridge: 0.001 }
-  - { name: quadratic, strength: 1.0, clip_quantile: 0.995, ridge: 0.001 }
+  # - { name: quadratic, strength: 1.0, clip_quantile: 0.995, ridge: 0.001 }
   - { name: linear, strength: 0.35, clip_quantile: 0.995, ridge: 0.001 }
+  - { name: sigmoid, strength: 1.0, clip_quantile: 0.995, ridge: 0.001 }
 sample_sizes: { n_calibration: 10000, m_test: 500 }
 fcp:
   delta: 0.1
