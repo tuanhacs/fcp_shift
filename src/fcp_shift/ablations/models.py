@@ -394,6 +394,14 @@ def _plot_grid(
                     else compact_tick_label(value, position)
                 )
             )
+            x_min = axis.get_xlim()[0]
+            axis.xaxis.set_major_formatter(
+                FuncFormatter(
+                    lambda value, position, minimum=x_min: ""
+                    if np.isclose(value, minimum)
+                    else compact_tick_label(value, position)
+                )
+            )
             axis.grid(alpha=0.25)
 
     middle = len(weights) // 2
