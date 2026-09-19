@@ -116,7 +116,7 @@ def _plot_grid(
     )
     method_styles = {
         "dkw_forward_pass_rate": ("#0072B2", "-", "DKW"),
-        "cojer_forward_pass_rate": ("#D55E00", ":", "CoJER"),
+        "cojer_forward_pass_rate": ("#D55E00", "-", "CoJER"),
     }
 
     for row, weight in enumerate(weights):
@@ -183,10 +183,10 @@ def _plot_grid(
             va="center",
             fontweight="bold",
         )
+        axes[row, 0].set_ylabel("Guarantee probability")
 
-    figure.supxlabel(r"Failure probability $\delta$", y=0.035)
-    figure.supylabel("Guarantee probability", x=0.02)
-    figure.legend(
+    axes[-1, 0].set_xlabel(r"Failure probability $\delta$")
+    axes[0, 0].legend(
         handles=[
             Line2D(
                 [0], [0], color="black", linestyle="--", linewidth=2,
@@ -200,13 +200,12 @@ def _plot_grid(
                 for color, linestyle, label in method_styles.values()
             ],
         ],
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.01),
-        ncol=3,
+        loc="lower left",
+        ncol=1,
         frameon=True,
         fontsize=font_size("legend", 9),
     )
-    figure.tight_layout(rect=(0.045, 0.065, 1.0, 0.92))
+    figure.tight_layout()
     destination = output / f"baselines_forward_{len(weights)}x{len(ordered_datasets)}.pdf"
     figure.savefig(destination, bbox_inches="tight")
     plt.close(figure)
