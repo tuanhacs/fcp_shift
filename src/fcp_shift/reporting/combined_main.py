@@ -243,7 +243,7 @@ def make_covariate_transport_figure(
             curves[("covariate", name)],
             title,
             column == 0,
-            column == 0,
+            False,
             False,
             covariate_delta,
         )
@@ -252,7 +252,7 @@ def make_covariate_transport_figure(
             curves[("transport", name)],
             "",
             False,
-            column == 0,
+            False,
             column == 0,
             transport_delta,
         )
